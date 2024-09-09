@@ -119,3 +119,5 @@ else:
 l.debug("Found method %s %s", method_name, node.range)
 
 runs_forever(node)
+
+sys.exit(0)
