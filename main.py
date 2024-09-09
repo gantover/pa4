@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from shared import *
-from assertion_error import assertion_error
-from runs_forever import runs_forever
+from bytecode.assertion_error import assertion_error
+from syntactic.runs_forever import runs_forever
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
