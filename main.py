@@ -21,6 +21,11 @@ TYPE_LOOKUP = {
     "I": "int",
 }
 
+"""
+Bytecode analysis
+"""
+
+
 classfile = (Path("decompiled") / i["class_name"].replace(".", "/")).with_suffix(
     ".json"
 )
@@ -63,4 +68,48 @@ else:
 l.debug("Found it")
 # I'm kind of sure the answer is yes.
 print("assertion error;80%")
+
+
+
+"""
+Tree-sitter analysis
+"""
+
+srcfile = (Path("src/main/java") / i["class_name"].replace(".", "/")).with_suffix(
+    ".java"
+)
+
+with open(srcfile, "rb") as f:
+    l.debug("parse sourcefile %s", srcfile)
+    tree = parser.parse(f.read())
+
+simple_classname = i["class_name"].split(".")[-1]
+
+# To figure out how to write these you can consult the
+# https://tree-sitter.github.io/tree-sitter/playground
+class_q = JAVA_LANGUAGE.query(
+    f"""
+    (class_declaration 
+        name: ((identifier) @class-name 
+               (#eq? @class-name "{simple_classname}"))) @class
+"""
+)
+
+for node in class_q.captures(tree.root_node)["class"]:
+    break
+else:
+    l.error(f"could not find a class of name {simple_classname} in {srcfile}")
+    sys.exit(-1)
+
+l.debug("Found class %s", node.range)
+
+method_name = i["method_name"]
+
+method_q = JAVA_LANGUAGE.query(
+    f"""
+    (method_declaration name: 
+      ((identifier) @method-name (#eq? @method-name "{method_name}"))
+    ) @method
+"""
+)
 
