@@ -11,5 +11,8 @@ watches for while loops and guesses that it might be an infinite loop
 """
 def runs_forever(method_node):
     for w in while_q.captures(method_node)["while"]:
-        print(w)
+        condition = w.child_by_field_name("condition")
+        condition = unwrap(condition, "failed to extract condition")
+        l.debug(f"found while statement with condition {condition}")
+        print("*;60%")
     
