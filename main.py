@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, logging 
+from shared import *
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -7,9 +7,6 @@ l.basicConfig(level=logging.DEBUG)
 (name,) = sys.argv[1:]
 
 l.debug("check assertion")
-
-import json, re
-from pathlib import Path
 
 l.debug("read the method name")
 
@@ -34,6 +31,7 @@ with open(classfile) as f:
 
 l.debug("looking up method")
 # Lookup method
+# looking through all methods to find ours
 for m in classfile["methods"]:
     if (
         m["name"] == i["method_name"]
