@@ -11,7 +11,7 @@ tools:
     technologies:
       - python
 
-    executable: main.py
+    executable: ../pa4/main.py
 
 # Describe your machine here (for research purposes) 
 machine:
