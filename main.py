@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from shared import *
 from assertion_error import assertion_error
+from runs_forever import runs_forever
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -27,7 +28,7 @@ Bytecode analysis
 """
 
 
-classfile = (Path("decompiled") / i["class_name"].replace(".", "/")).with_suffix(
+classfile = (Path("../jpamb/decompiled") / i["class_name"].replace(".", "/")).with_suffix(
     ".json"
 )
 
@@ -52,7 +53,6 @@ else:
     print("Could not find method in bytecode")
     sys.exit(-1)
 
-
 assertion_error(m["code"]["bytecode"])
 
 
@@ -60,7 +60,7 @@ assertion_error(m["code"]["bytecode"])
 Tree-sitter analysis
 """
 
-srcfile = (Path("src/main/java") / i["class_name"].replace(".", "/")).with_suffix(
+srcfile = (Path("../jpamb/src/main/java") / i["class_name"].replace(".", "/")).with_suffix(
     ".java"
 )
 
@@ -98,3 +98,24 @@ method_q = JAVA_LANGUAGE.query(
 """
 )
 
+for node in method_q.captures(node)["method"]:
+    if not (p := node.child_by_field_name("parameters")):
+        l.debug(f"Could not find parameteres of {method_name}")
+        continue
+
+    params = [c for c in p.children if c.type == "formal_parameter"]
+
+    if len(params) == len(i["params"]) and all(
+        (tp := t.child_by_field_name("type")) is not None
+        and tp.text is not None
+        and TYPE_LOOKUP[tn] == tp.text.decode()
+        for tn, t in zip(i["params"], params)
+    ):
+        break
+else:
+    l.warning(f"could not find a method of name {method_name} in {simple_classname}")
+    sys.exit(-1)
+
+l.debug("Found method %s %s", method_name, node.range)
+
+runs_forever(node)
