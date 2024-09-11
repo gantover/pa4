@@ -32,6 +32,7 @@ class Result(Enum):
     NullPointer = "null pointer"
     OutOfBounds = "out of bounds"
     Success = "ok"
+    Unknown = "Unknown result, This is temporary"
     
 class Data:
     type: Type
@@ -44,16 +45,17 @@ class Data:
     def __repr__(self) -> str:
         return f'<Data t: {self.type}, v: {self.value}>'
     
-    # def __key(self):
-    #     return (self.type, self.value)
+    @property
+    def __key(self):
+        return self.type, self.value
 
-    # def __hash__(self):
-    #     return hash(self.__key())
+    def __hash__(self):
+        return hash(self.__key)
 
-    # def __eq__(self, other):
-    #     if isinstance(other, Data):
-    #         return self.__key() == other.__key()
-    #     return False
+    def __eq__(self, other):
+        if isinstance(other, Data):
+            return self.__key == other.__key
+        return False
 
 class FieldDefinition:
     className : str
@@ -79,7 +81,7 @@ class MethodDefinition:
         self.ref = ref
         self.returns = returns
 
-class JavaArray(dict):
+class JavaArray(dict): #TODO:: make immutable and ensure changes don't backflow
     length: Data
     
     def __init__(self, length):
@@ -87,19 +89,44 @@ class JavaArray(dict):
     
     def __repr__(self):
         return f'<JavaArray l: {self.length}>'
+    
+    @property
+    def __key(self):
+        return (self.length)
+    
+    def __hash__(self):
+        return hash(self.__key)
+    
+    # def __eq__(self, value: object) -> bool:
+    #     return super().__eq__(value)
 
 class State:
     pc: int
-    memory: dict[int, Data]
+    memory: tuple
     stack: list[Data]
     
     def __init__(self, pc, memory, *stack):
         self.stack = stack
-        self.memory = dict(memory)
+        self.memory = tuple(sorted(memory.items()))
         self.pc = pc
+    
+    @property
+    def __key(self):
+        return self.pc, self.memory, self.stack
     
     def __iter__(self):
         return iter((self.pc, dict(self.memory), self.stack))
+    
+    def __eq__(self, other):
+        if isinstance(other, State):
+            return self.__key == other.__key
+        return False
+    
+    def __hash__(self):
+        return hash(self.__key)
+    
+    def __repr__(self):
+        return f'<state {self.pc} {self.memory} {self.stack}>'
 
 class Instruction:
     name: str
@@ -219,10 +246,20 @@ class Array_Store(Instruction):
     
     def execute(self, pc, memory, value, index : Data, arrayRef: Data, *stack) -> list[State]:
         
-        if arrayRef.value == None:
+        array = arrayRef.value
+        
+        if array == None:
             return Result.NullPointer
         
-        # TODO:: check if out of bounds
+        # TODO:: Improve bounds check
+        # print(index.value)
+        
+        if isinstance(index.value, int):
+            # print("instance of int")
+            if index.value < 0:
+                return Result.OutOfBounds
+            if isinstance(array.length.value, int) and index.value >= array.length.value:
+                return Result.OutOfBounds
         
         arrayRef.value[index.value] = value # TODO:: implement type safety
         
@@ -239,6 +276,13 @@ class array_load(Instruction):
         
         if arrayRef.value == None:
             return Result.NullPointer
+        
+        if isinstance(index.value, int):
+            # print("instance of int")
+            if index.value < 0:
+                return Result.OutOfBounds
+            if isinstance(arrayRef.value.length.value, int) and index.value >= arrayRef.value.length.value:
+                return Result.OutOfBounds
         
         value = arrayRef.value[index] #TODO:: type safety, failiure handling
         
@@ -281,7 +325,7 @@ class Get(Instruction):
         if not self.static:
             ref, *stack = stack
         
-        value = Data(Type.Ref, None) # TODO
+        value = Data(self.field.type, None) # TODO:: get data from field
         
         return [State(pc, memory, value, *stack)]
 
@@ -296,6 +340,8 @@ class New(Instruction):
         
         if "AssertionError" in self.javaClass:
             return Result.AssertionError
+        
+        return Result.Unknown
         
         ref = Data(Type.Ref, None) # TODO:: null refrence for now
         
@@ -312,7 +358,7 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack) -> PyList[State]:
         
-        # TODO::
+        return Result.Unknown # TODO::
         print("Invoking is illegal and you should feel bad <3")
         
         return [State(pc, memory, *stack)]
@@ -362,6 +408,8 @@ class Binary(Instruction):
     
     def execute(self, pc, memory, val1, val2, *stack):
         
+        return Result.Unknown # TODO:: implement
+        
         print("Not Implemented Yet:: Binary.execute") #TODO
         result = Data(self.type, None) # TODO
         
@@ -409,13 +457,19 @@ class JavaSimulator:
     
     def run(self, depth):
         results = dict()
+        unknowns = 0
         
+        for result in Result:
+            results.setdefault(result, 0.01)
+    
         for i in range(depth):
             if(len(self.frontier) > 0):
                 state = self.frontier.pop()
                 instruction = self.instructions[state.pc]
                 
                 pc, memory, stack = state
+                
+                # print(state, hash(state))
                 
                 try:
                     result = instruction.execute(pc + 1, memory, *stack)
@@ -424,10 +478,17 @@ class JavaSimulator:
                     break
                 
                 if isinstance(result, Result):
-                    results.setdefault(result, 0)
-                    results[result] += 1
+                    if result == Result.Unknown:
+                        unknowns += 1
+                    else:
+                        results[result] += 1
                 else:
-                    self.frontier.extend(result)
+                    for state in result:
+                        if state not in self.explored:
+                            self.frontier.append(state)
+                            self.explored.add(state)
+                        else:
+                            results[Result.RunsForever] += 1
             else:
                 break
         
@@ -437,22 +498,23 @@ class JavaSimulator:
             for value in results.values():
                 sum += value
             
-            for result, value in results.items():
-                print(f'{result.value};{value/sum*100}%')
-                print(f'{result.value}: {value/sum*100}')
-                
-        print(i)
+            print(f'unknown: {unknowns}, sum: {sum}')
+            if sum > 0.5 and unknowns == 0:
+                for result in Result:
+                    value = results[result]
+                    
+                    print(f'{result.value};{value/sum*100}%')
             
             
 
 def parseMethod(method):
     instructions = []
-    initial_state = State(0, dict())
+    pc, memory, stack = State(0, dict())
     
     for instruction in method["code"]["bytecode"]:
         instructions.append(instructionFactory.parse(instruction))
     
     for i, param in enumerate(method["params"]):
-        initial_state.memory[i] = Data(param["type"]["base"], None)
+        memory[i] = Data(param["type"]["base"], None)
         
-    return JavaSimulator(instructions, initial_state)
+    return JavaSimulator(instructions, State(pc, memory, *stack))
