@@ -26,12 +26,12 @@ class Condition(Enum):
     LessEqual = "le"
 
 class Result(Enum):
-    RunsForever = "*",
-    AssertionError = "assertion error",
-    DivisionByZero = "divide by zero",
-    NullPointer = "null pointer",
-    OutOfBounds = "out of bounds",
-    Success = "ok",
+    RunsForever = "*"
+    AssertionError = "assertion error"
+    DivisionByZero = "divide by zero"
+    NullPointer = "null pointer"
+    OutOfBounds = "out of bounds"
+    Success = "ok"
     
 class Data:
     type: Type
@@ -40,6 +40,20 @@ class Data:
     def __init__(self, type, value) -> None:
         self.type = type
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Data t: {self.type}, v: {self.value}>'
+    
+    # def __key(self):
+    #     return (self.type, self.value)
+
+    # def __hash__(self):
+    #     return hash(self.__key())
+
+    # def __eq__(self, other):
+    #     if isinstance(other, Data):
+    #         return self.__key() == other.__key()
+    #     return False
 
 class FieldDefinition:
     className : str
@@ -65,12 +79,14 @@ class MethodDefinition:
         self.ref = ref
         self.returns = returns
 
-class JavaArray:
+class JavaArray(dict):
     length: Data
-    values: dict[int, Data]
     
     def __init__(self, length):
         self.length = length
+    
+    def __repr__(self):
+        return f'<JavaArray l: {self.length}>'
 
 class State:
     pc: int
@@ -97,10 +113,14 @@ class Push(Instruction):
     
     def __init__(self, opr, value, **_):
         self.name = opr
-        self.value = value
+        
+        if value is None:
+            self.value = Data(None, None)
+        else:
+            self.value = Data(**value)
     
     def execute(self, pc, memory, *stack) -> State:
-        return State(pc, memory, self.value, *stack)
+        return [State(pc, memory, self.value, *stack)]
 
 class Store(Instruction):
     index: int
@@ -114,7 +134,7 @@ class Store(Instruction):
     def execute(self, pc, memory, *stack) -> State:
         memory[self.index], *stack = stack
         
-        return State(pc, memory, *stack)
+        return [State(pc, memory, *stack)]
 
 class Load(Instruction):
     index: int
@@ -126,7 +146,7 @@ class Load(Instruction):
         self.type = type
         
     def execute(self, pc, memory, *stack) -> State:
-        return State(pc, memory, memory[self.index], *stack)
+        return [State(pc, memory, memory[self.index], *stack)]
 
 class If(Instruction):
     condition: Condition
@@ -176,16 +196,19 @@ class NewArray(Instruction):
         
         array = Data(Type.Ref, JavaArray(length))
         
-        return State(pc, memory, array, *stack)
+        return [State(pc, memory, array, *stack)]
     
 class Dup(Instruction):
     # words: int
     
-    def __init__(self, opr, **_):
+    def __init__(self, opr, words, **_):
         self.name = opr
+        
+        if words != 1:
+            print("Can't handle dub words different than 1 atm") #TODO:: fix
     
     def execute(self, pc, memory, head, *stack) -> list[State]:
-        return State(pc, memory, head, head, *stack)
+        return [State(pc, memory, head, head, *stack)]
     
 class Array_Store(Instruction):
     type: Type
@@ -194,11 +217,16 @@ class Array_Store(Instruction):
         self.name = opr
         self.type = type
     
-    def execute(self, pc, memory, value, index, arrayRef, *stack) -> list[State]:
+    def execute(self, pc, memory, value, index : Data, arrayRef: Data, *stack) -> list[State]:
         
-        # TODO:: store value in array at index
+        if arrayRef.value == None:
+            return Result.NullPointer
         
-        return State(pc, memory, *stack)
+        # TODO:: check if out of bounds
+        
+        arrayRef.value[index.value] = value # TODO:: implement type safety
+        
+        return [State(pc, memory, *stack)]
 
 class array_load(Instruction):
     type: Type
@@ -207,13 +235,14 @@ class array_load(Instruction):
         self.name = opr
         self.type = type
     
-    def execute(self, pc, memory, index, arrayRef, *stack) -> list[State]:
+    def execute(self, pc, memory, index, arrayRef : Data, *stack) -> list[State]:
         
-        # TODO:: load value in array at index
+        if arrayRef.value == None:
+            return Result.NullPointer
         
-        value = Data(self.type, None) #TODO
+        value = arrayRef.value[index] #TODO:: type safety, failiure handling
         
-        return State(pc, memory, value, *stack)
+        return [State(pc, memory, value, *stack)]
   
 class Return(Instruction):
     type: Type
@@ -229,12 +258,15 @@ class ArrayLength(Instruction):
     def __init__(self, opr, **_):
         self.name = opr
     
-    def execute(self, pc, memory, ref, *stack) -> PyList[State]:
+    def execute(self, pc, memory, ref : Data, *stack) -> PyList[State]:
         # TODO:: return array length
         
-        length = Data(Type.Integer, None) #length(ref)
+        if ref.value == None:
+            return Result.NullPointer
         
-        return State(pc, memory, length, *stack)
+        length = ref.value.length #length(ref)
+        
+        return [State(pc, memory, length, *stack)]
 
 class Get(Instruction):
     static: bool
@@ -251,21 +283,24 @@ class Get(Instruction):
         
         value = Data(Type.Ref, None) # TODO
         
-        return State(pc, memory, value, *stack)
+        return [State(pc, memory, value, *stack)]
 
 class New(Instruction):
     javaClass: any # TODO:: create type
     
-    def __init__(self, opr, **kwargs) -> None:
+    def __init__(self, opr, **kwargs):
         self.name = opr
         self.javaClass = kwargs["class"]
         
     def execute(self, pc, memory, *stack) -> PyList[State]:
         
+        if "AssertionError" in self.javaClass:
+            return Result.AssertionError
+        
         ref = Data(Type.Ref, None) # TODO:: null refrence for now
         
-        return State(pc, memory, ref, *stack)
-
+        return [State(pc, memory, ref, *stack)]
+    
 class Invoke(Instruction):
     access: any
     method: any
@@ -280,17 +315,17 @@ class Invoke(Instruction):
         # TODO::
         print("Invoking is illegal and you should feel bad <3")
         
-        return State(pc, memory, *stack)
+        return [State(pc, memory, *stack)]
         
 class Throw(Instruction):
-    def __init__(self, opr, **_) -> None:
+    def __init__(self, opr, **_):
         self.name = opr
     
     def execute(self, pc, memory, ref, *stack) -> PyList[State]:
         
         print("Throwable thrown")
         
-        return State(pc, memory, ref)
+        return [State(pc, memory, ref)]
 
 class Incr(Instruction): # TODO:: give better name, needs factory update first
     index: int
@@ -303,9 +338,9 @@ class Incr(Instruction): # TODO:: give better name, needs factory update first
     
     def execute(self, pc, memory, *stack):
         
-        memory[self.index] += self.amount # TODO:: this will probably crash, as data is stored with type atm 
+        memory[self.index].value += self.amount
         
-        return State(pc, memory, *stack)
+        return [State(pc, memory, *stack)]
 
 class GoTo(Instruction):
     target: int
@@ -314,22 +349,23 @@ class GoTo(Instruction):
         self.target = target
     
     def execute(self, pc, memory, *stack):
-        return State(self.target, memory, *stack)
+        return [State(self.target, memory, *stack)]
 
 class Binary(Instruction):
     operant: str # TODO:: consider enum
     type: Type
     
-    def __init__(self, opr, operant, type, **_) -> None:
+    def __init__(self, opr, operant, type, **_):
         self.name = opr
         self.operant = operant
         self.type = type
     
-    def execute(self, pc, memory, val1, val2, *stack) -> PyList[State]:
+    def execute(self, pc, memory, val1, val2, *stack):
         
+        print("Not Implemented Yet:: Binary.execute") #TODO
         result = Data(self.type, None) # TODO
         
-        return State(pc, memory, result, *stack)
+        return [State(pc, memory, result, *stack)]
 
 class Cast(Instruction):
     fromType: Type
@@ -341,10 +377,7 @@ class Cast(Instruction):
         self.toType = to
     
     def execute(self, pc, memory, head : Data, *stack):
-        
-        toValue = Data(self.toType, head.value)
-        
-        return State(pc, memory, toValue, stack)
+        return [State(pc, memory, Data(self.toType, head.value), stack)]
 
 class SubclassFactory(dict):
     def __init__(self, base_class):
@@ -363,8 +396,63 @@ class SubclassFactory(dict):
 
 instructionFactory = SubclassFactory(Instruction)
 
+class JavaSimulator:
+    instructions: list[Instruction]
+    
+    frontier: list[State]
+    explored: set
+    
+    def __init__(self, instructions, initial_state):
+        self.instructions = instructions
+        self.frontier = [initial_state]
+        self.explored = {initial_state}
+    
+    def run(self, depth):
+        results = dict()
+        
+        for i in range(depth):
+            if(len(self.frontier) > 0):
+                state = self.frontier.pop()
+                instruction = self.instructions[state.pc]
+                
+                pc, memory, stack = state
+                
+                try:
+                    result = instruction.execute(pc + 1, memory, *stack)
+                except:
+                    print(f'exception at {i}, while running instruction {instruction}')
+                    break
+                
+                if isinstance(result, Result):
+                    results.setdefault(result, 0)
+                    results[result] += 1
+                else:
+                    self.frontier.extend(result)
+            else:
+                break
+        
+        if i + 1 != depth:
+            sum = 0
+            
+            for value in results.values():
+                sum += value
+            
+            for result, value in results.items():
+                print(f'{result.value};{value/sum*100}%')
+                print(f'{result.value}: {value/sum*100}')
+                
+        print(i)
+            
+            
+
 def parseMethod(method):
     instructions = []
+    initial_state = State(0, dict())
     
     for instruction in method["code"]["bytecode"]:
         instructions.append(instructionFactory.parse(instruction))
+    
+    for i, param in enumerate(method["params"]):
+        initial_state.memory[i] = Data(param["type"]["base"], None)
+        
+    return JavaSimulator(instructions, initial_state)
