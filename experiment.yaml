@@ -9,6 +9,8 @@ for_science: true
 tools:
   test: 
     technologies:
+      - tree-sitter
+      - bytecode
       - python
 
     executable: ../pa4/main.py

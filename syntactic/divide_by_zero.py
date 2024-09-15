@@ -23,7 +23,6 @@ div_q = JAVA_LANGUAGE.query(
 
 
 def predict_divide_by_zero(method_body):
-    prediction = 0
     if div_by_zero_q.captures(method_body):
         # We cannot simply say that it is guaranteed to occur, since code may not be reachable.
         prediction = 80

@@ -4,6 +4,7 @@ import tree_sitter_java
 
 from syntactic.divide_by_zero import predict_divide_by_zero
 from syntactic.runs_forever import runs_forever
+from syntactic.null_pointer import predict_null_pointer
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -17,14 +18,16 @@ TYPE_LOOKUP = {
 }
 
 def run_analysis(class_name, method_name, method_params, srcfile):
-    method_node = _get_method_node(class_name, method_name, method_params, srcfile)
-
-    predict_divide_by_zero(method_node)
-    runs_forever(method_node)
-
-def _get_method_node(class_name, method_name, method_params, srcfile):
     with open(srcfile, "rb") as f:
-        tree = parser.parse(f.read())
+        source_code_bytes = f.read()
+        method_node = _get_method_node(class_name, method_name, method_params, source_code_bytes)
+
+        predict_divide_by_zero(method_node)
+        runs_forever(method_node)
+        predict_null_pointer(method_node, source_code_bytes)
+
+def _get_method_node(class_name, method_name, method_params, source_code):
+    tree = parser.parse(source_code)
 
     simple_classname = class_name.split(".")[-1]
 
@@ -41,7 +44,7 @@ def _get_method_node(class_name, method_name, method_params, srcfile):
     for node in class_q.captures(tree.root_node)["class"]:
         break
     else:
-        l.error(f"could not find a class of name {simple_classname} in {srcfile}")
+        l.error(f"could not find a class of name {simple_classname} in source")
         sys.exit(-1)
 
     method_name = method_name
