@@ -36,12 +36,11 @@ class JavaSimulator:
                 
                 pc, memory, *stack = state
 
+                l.debug(f"-----")
                 l.debug(f"PC : {pc}")
+                l.debug(f"current instruction : {instruction.name}")
                 l.debug(f"Stack : {stack}")
-
-                
-                
-                # print(state)
+                l.debug(f"Memory : {memory}")
                 
                 try:
                     result = instruction.execute(pc + 1, memory, *stack)
