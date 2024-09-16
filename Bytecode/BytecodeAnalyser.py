@@ -1,11 +1,12 @@
 ﻿#!/usr/bin/env python3
-
 from enum import Enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 # from pydantic import validate_arguments
 from typing import List as PyList
 # from dataclass_wizard import fromdict
+
+import Data
 
 class Type(Enum):
     Integer = 0     # i integer
@@ -17,23 +18,6 @@ class Type(Enum):
     Double  = 6     # d	double
     Ref     = 7     # a	reference
 
-class Condition(Enum):
-    GreaterThan = "gt"
-    GreaterEqual = "ge"
-    NotEqual = "ne"
-    Equal = "eq"
-    LessThan = "lt"
-    LessEqual = "le"
-
-class Result(Enum):
-    RunsForever = "*"
-    AssertionError = "assertion error"
-    DivisionByZero = "divide by zero"
-    NullPointer = "null pointer"
-    OutOfBounds = "out of bounds"
-    Success = "ok"
-    Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
-    
 class Data:
     type: Type
     value: any
@@ -57,6 +41,23 @@ class Data:
             return self.__key == other.__key
         return False
 
+class Condition(Enum):
+    GreaterThan = "gt"
+    GreaterEqual = "ge"
+    NotEqual = "ne"
+    Equal = "eq"
+    LessThan = "lt"
+    LessEqual = "le"
+
+class Result(Enum):
+    RunsForever = "*"
+    AssertionError = "assertion error"
+    DivisionByZero = "divide by zero"
+    NullPointer = "null pointer"
+    OutOfBounds = "out of bounds"
+    Success = "ok"
+    Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
+    
 class FieldDefinition:
     className : str
     fieldName: str 
@@ -460,7 +461,7 @@ class JavaSimulator:
         unknowns = 0
         
         for result in Result:
-            results.setdefault(result, 0.01)
+            results.setdefault(result, 0)
     
         for i in range(depth):
             if(len(self.frontier) > 0):
@@ -498,14 +499,14 @@ class JavaSimulator:
             for value in results.values():
                 sum += value
             
-            print(f'unknown: {unknowns}, sum: {sum}')
             if sum > 0.5 and unknowns == 0:
                 for result in Result:
+                    if (result == Result.Unknown):
+                        continue
+                    
                     value = results[result]
                     
                     print(f'{result.value};{value/sum*100}%')
-            
-            
 
 def parseMethod(method):
     instructions = []

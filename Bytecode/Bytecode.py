@@ -56,6 +56,7 @@ try:
     BytecodeAnalyser.parseMethod(m).run(30)
 except Exception as e:
     print(e)
+    
 # l.debug("trying to find an assertion error being created")
 # # Look if the method contains an assertion error:
 # for inst in m["code"]["bytecode"]:
