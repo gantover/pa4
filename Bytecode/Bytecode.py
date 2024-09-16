@@ -50,7 +50,10 @@ else:
 
 # exec("../pa4/Bytecode/Bytecode.py")
 
-import BytecodeAnalyser
+try:
+    import BytecodeAnalyser
+except Exception as e:
+    print(e)
 
 try:
     BytecodeAnalyser.parseMethod(m).run(30)
