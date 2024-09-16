@@ -283,8 +283,12 @@ class Binary(Instruction):
         
         return Result.Unknown # TODO:: implement
         
+        match(self.operant):
+            case "add":
+                result = type(val1.value + val2.value)
+        
         print("Not Implemented Yet:: Binary.execute") #TODO
-        result = type(None) # TODO
+        # result = type(None) # TODO
         
         return [State(pc, memory, result, *stack)]
 
