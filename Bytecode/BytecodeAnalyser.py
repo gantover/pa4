@@ -1,13 +1,12 @@
 ﻿#!/usr/bin/env python3
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+
 # from pydantic import validate_arguments
 from typing import List as PyList
 # from dataclass_wizard import fromdict
 from enum import Enum
 
 from Instructions import Instruction, instructionFactory
-from Datatypes import Data
+from Datatypes import dataFactory
 from State import State, Result
 
 class JavaSimulator:
@@ -35,12 +34,12 @@ class JavaSimulator:
                 
                 pc, memory, *stack = state
                 
-                # print(state, hash(state))
+                # print(state)
                 
                 try:
                     result = instruction.execute(pc + 1, memory, *stack)
-                except:
-                    print(f'exception at {i}, while running instruction {instruction}')
+                except Exception as e:
+                    print(f'exception at {i}, while running instruction {instruction}: {e}')
                     break
                 
                 if isinstance(result, Result):
@@ -81,6 +80,6 @@ def parseMethod(method):
         instructions.append(instructionFactory.parse(instruction))
     
     for i, param in enumerate(method["params"]):
-        memory[i] = Data(param["type"]["base"], None)
+        memory[i] = dataFactory.get(param["type"]["base"])
         
     return JavaSimulator(instructions, State(pc, memory, *stack))

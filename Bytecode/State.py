@@ -3,13 +3,6 @@
 from Datatypes import Data, dataFactory
 from enum import Enum
 
-class MutableMemory(dict):
-    def __setitem__(self, *keys, value):
-        super().__setitem__(keys, value)
-
-    def __getitem__(self, *keys):
-        return super().__getitem__(keys)
-
 class State:
     pc: int
     memory: tuple[any, Data]
@@ -17,7 +10,7 @@ class State:
     
     def __init__(self, pc, memory, *stack):
         self.stack = stack
-        self.memory = tuple(sorted(memory.items()))
+        self.memory = tuple(memory.items())
         self.pc = pc
     
     @property
@@ -25,7 +18,7 @@ class State:
         return self.pc, self.memory, self.stack
     
     def __iter__(self):
-        return iter((self.pc, MutableMemory(self.memory), *self.stack))
+        return iter((self.pc, dict(self.memory), *self.stack))
     
     def __eq__(self, other):
         if isinstance(other, State):

@@ -8,18 +8,14 @@ class Instruction:
     name: str
     
     def execute(self, pc, memory, *stack):
-        print("BAD person, dont create an instance of an abstract base class") # raise Exception("Base instruction should be consider")
+        raise Exception("BAD person, dont create an instance of an abstract base class")
 
 class Push(Instruction):
     value: Data
     
     def __init__(self, opr, value, offset):
         self.name = opr
-        
-        if value is None:
-            self.value = Data(None, None)
-        else:
-            self.value = Data(**value)
+        self.value = dataFactory.parse(value)
     
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, self.value, *stack)]
@@ -96,10 +92,10 @@ class NewArray(Instruction):
         # for i in range(self.dimensions):
         #     dimension_size, *stack = stack
         
-        array = Ref("Array")
-        memory[array, "length"] = length
+        ref = Ref("Array")
+        memory[ref] = length
         
-        return [State(pc, memory, array, *stack)]
+        return [State(pc, memory, ref, *stack)]
     
 class Dup(Instruction):
     # words: int
@@ -120,11 +116,9 @@ class Array_Store(Instruction):
         self.name = opr
         self.type = dataFactory.get(type)
     
-    def execute(self, pc, memory, value, index : Data, arrayRef: Data, *stack):
+    def execute(self, pc, memory, value, index, ref: Ref, *stack):
         
-        array = arrayRef.value
-        
-        if array == None:
+        if ref == None:
             return Result.NullPointer
         
         # TODO:: Improve bounds check
@@ -134,10 +128,10 @@ class Array_Store(Instruction):
             # print("instance of int")
             if index.value < 0:
                 return Result.OutOfBounds
-            if isinstance(array.length.value, int) and index.value >= array.length.value:
+            if index.value >= memory[ref].value:
                 return Result.OutOfBounds
         
-        arrayRef.value[index.value] = value # TODO:: implement type safety
+        memory[ref[index]] = value # TODO:: implement type safety
         
         return [State(pc, memory, *stack)]
 
@@ -148,19 +142,19 @@ class array_load(Instruction):
         self.name = opr
         self.type = dataFactory.get(type)
     
-    def execute(self, pc, memory, index, arrayRef : Data, *stack):
+    def execute(self, pc, memory, index, ref : Data, *stack):
         
-        if arrayRef.value == None:
+        if ref.value == None:
             return Result.NullPointer
         
         if isinstance(index.value, int):
             # print("instance of int")
             if index.value < 0:
                 return Result.OutOfBounds
-            if isinstance(arrayRef.value.length.value, int) and index.value >= arrayRef.value.length.value:
+            if index.value >= memory[ref[index]]:
                 return Result.OutOfBounds
         
-        value = arrayRef.value[index] #TODO:: type safety, failiure handling
+        value = memory[ref[index]] #TODO:: type safety, failiure handling
         
         return [State(pc, memory, value, *stack)]
   
@@ -178,13 +172,12 @@ class ArrayLength(Instruction):
     def __init__(self, opr, offset):
         self.name = opr
     
-    def execute(self, pc, memory, ref : Data, *stack):
-        # TODO:: return array length
+    def execute(self, pc, memory, ref : Ref, *stack):
         
-        if ref.value == None:
+        if ref == None:
             return Result.NullPointer
         
-        length = ref.value.length #length(ref)
+        length = memory[ref]
         
         return [State(pc, memory, length, *stack)]
 
@@ -201,7 +194,10 @@ class Get(Instruction):
         if not self.static:
             ref, *stack = stack
         
-        value = Data(self.field.type, None) # TODO:: get data from field
+        if self.field.type == None:
+            value = None
+        else:
+            value = self.field.type(None) # TODO:: get data from field
         
         return [State(pc, memory, value, *stack)]
 
@@ -219,7 +215,7 @@ class New(Instruction):
         
         return Result.Unknown
         
-        ref = Data(Type.Ref, None) # TODO:: null refrence for now
+        ref = Ref(self.javaClass) # TODO:: null refrence for now
         
         return [State(pc, memory, ref, *stack)]
     
@@ -267,7 +263,8 @@ class Incr(Instruction): # TODO:: give better name, needs factory update first
 class GoTo(Instruction):
     target: int
     
-    def __init__(self, target, offset):
+    def __init__(self, opr, target, offset):
+        self.name = opr
         self.target = target
     
     def execute(self, pc, memory, *stack):
@@ -275,7 +272,7 @@ class GoTo(Instruction):
 
 class Binary(Instruction):
     operant: str # TODO:: consider enum
-    type:  classmethod
+    type: classmethod
     
     def __init__(self, opr, operant, type, offset):
         self.name = opr
@@ -287,7 +284,7 @@ class Binary(Instruction):
         return Result.Unknown # TODO:: implement
         
         print("Not Implemented Yet:: Binary.execute") #TODO
-        result = Data(self.type, None) # TODO
+        result = type(None) # TODO
         
         return [State(pc, memory, result, *stack)]
 
@@ -300,7 +297,7 @@ class Cast(Instruction):
         self.fromType = dataFactory.get(kwargs["from"])
         self.toType = dataFactory.get(to)
     
-    def execute(self, pc, memory, head : Data, *stack):
-        return [State(pc, memory, Data(self.toType, head.value), stack)]
+    def execute(self, pc, memory, head, *stack):
+        return [State(pc, memory, self.toType(head.value), stack)]
     
 instructionFactory = SubclassFactory(Instruction, "opr")

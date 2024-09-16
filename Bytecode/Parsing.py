@@ -10,6 +10,9 @@ class SubclassFactory(dict):
             self[subclass.__name__.lower()] = subclass
     
     def parse(self, data: dict):
+        if data == None:
+            return None
+        
         constructor = self.get(data[self.typeField])
 
         if constructor is None:
