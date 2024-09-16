@@ -32,7 +32,7 @@ class Result(Enum):
     NullPointer = "null pointer"
     OutOfBounds = "out of bounds"
     Success = "ok"
-    Unknown = "Unknown result, This is temporary"
+    Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
     
 class Data:
     type: Type

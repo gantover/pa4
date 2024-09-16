@@ -13,6 +13,14 @@ tools:
 
   #   executable: ../pa4/main.py
 
+  bytecoder: 
+    technologies:
+      - bytecode
+      - static
+      - python
+
+    executable: ../pa4/Bytecode/Bytecode.py
+
   test: 
     technologies:
       - python
