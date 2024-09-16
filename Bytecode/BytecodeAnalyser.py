@@ -36,8 +36,8 @@ class JavaSimulator:
                 
                 pc, memory, *stack = state
 
-                l.debug(f"PC : {self.pc}")
-                l.debug(f"Stack : {self.stack}")
+                l.debug(f"PC : {pc}")
+                l.debug(f"Stack : {stack}")
 
                 
                 
