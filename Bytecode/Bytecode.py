@@ -1,8 +1,6 @@
-﻿#!/usr/bin/env python3
-import sys, logging 
-
-l = logging
-l.basicConfig(level=logging.DEBUG)
+#!/usr/bin/env python3
+import sys
+from Debug import l
 
 (name,) = sys.argv[1:]
 

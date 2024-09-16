@@ -4,6 +4,7 @@
 from typing import List as PyList
 # from dataclass_wizard import fromdict
 from enum import Enum
+from Debug import l
 
 from Instructions import Instruction, instructionFactory
 from Datatypes import dataFactory
@@ -28,11 +29,17 @@ class JavaSimulator:
             results.setdefault(result, 0)
     
         for i in range(depth):
+            # to explore branches
             if(len(self.frontier) > 0):
                 state = self.frontier.pop()
                 instruction = self.instructions[state.pc]
                 
                 pc, memory, *stack = state
+
+                l.debug(f"PC : {self.pc}")
+                l.debug(f"Stack : {self.stack}")
+
+                
                 
                 # print(state)
                 
@@ -42,22 +49,31 @@ class JavaSimulator:
                     print(f'exception at {i}, while running instruction {instruction}: {e}')
                     break
                 
+                # checks wheter we have a final result or if the state
+                # should continue to be updated or if we branched
                 if isinstance(result, Result):
                     if result == Result.Unknown:
                         unknowns += 1
                     else:
                         results[result] += 1
                 else:
+                    # there could be multiple branch states
+                    # for instance if statement returns two states
                     for state in result:
                         if state not in self.explored:
                             self.frontier.append(state)
                             self.explored.add(state)
+                        # if the same exact state is added twice to explored
+                        # it means that we are into a running forever scenario
+                        # the condition to loop was true and since the state has not
+                        # been updated, the condition stays true
                         else:
                             results[Result.RunsForever] += 1
             else:
                 break
         
         if i + 1 != depth:
+            # sum is used to weight the probabilites of each result
             sum = 0
             
             for value in results.values():
