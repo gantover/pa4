@@ -3,6 +3,7 @@
 from Datatypes import Data, Ref, dataFactory
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition
 from Parsing import SubclassFactory
+from Debug import l
 
 class Instruction:
     name: str
@@ -279,18 +280,36 @@ class Binary(Instruction):
         self.operant = operant
         self.type = dataFactory.get(type)
     
-    def execute(self, pc, memory, val1, val2, *stack):
-        
-        return Result.Unknown # TODO:: implement
-        
+    def execute(self, pc, memory, val2, val1, *stack):
+        # val2, val1 are the two top values on the stack
+        if self.type == None:
+            l.error("type None detected on binary operation")
+            return Result.Unknown
         match(self.operant):
             case "add":
-                result = type(val1.value + val2.value)
-        
-        print("Not Implemented Yet:: Binary.execute") #TODO
-        # result = type(None) # TODO
-        
+                result = self.type(val1.value + val2.value)
+            case "sub":
+                result = self.type(val1.value - val2.value)
+            case "mul":
+                result = self.type(val1.value * val2.value)
+            case "div":
+                print(f"division detected : val1 {val1.value} / val2 {val2.value}")
+                try:
+                    result = self.type(val1.value / val2.value)
+                except ZeroDivisionError:
+                    return Result.DivisionByZero
+                except:
+                    l.error(f"unimplemented division operation for type {self.type}")
+                    return Result.Unknown
+            case "rem":
+                result = self.type(val1.value % val2.value)
+            case _:
+                l.error("unimplemented binary operation")
+                return Result.Unknown
+
         return [State(pc, memory, result, *stack)]
+        # the result is simply put on top of the stack, waiting to be stored
+        
 
 class Cast(Instruction):
     fromType: classmethod
