@@ -34,6 +34,15 @@ class Integer(Data):
     
     def __init__(self, value, **_):
         self.value = value
+
+# there are instances in bytecode where the type is int
+# instead of integer, this is a temporary fix to be able
+# to treat int as well
+class Int(Data):
+    value: int
+    
+    def __init__(self, value, **_):
+        self.value = value
     
 class Long(Data):
     value: int

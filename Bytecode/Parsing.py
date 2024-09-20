@@ -4,10 +4,12 @@ class SubclassFactory(dict):
     typeField: str
     
     def __init__(self, base_class, typeField):
+        # ex : base_class can be Data and subclass will be Integer, Short,...
         self.typeField = typeField 
         
         for subclass in base_class.__subclasses__():
             self[subclass.__name__.lower()] = subclass
+            # this fills in the dictionnary of "type" -> actual DataType
     
     def parse(self, data: dict):
         if data == None:

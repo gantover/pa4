@@ -95,6 +95,8 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
         self.target = target
     
     def execute(self, pc, memory, val1, *stack):
+        l.debug(f"{val1} {self.condition} 0 ?")
+
         jump = State(self.target, memory, *stack)
         stay = State(pc, memory, *stack)
         
@@ -352,6 +354,7 @@ class Binary(Instruction):
     type: classmethod
     
     def __init__(self, opr, operant, type, offset):
+        # TODO : issue to fix with int/integer types
         self.name = opr
         self.operant = BinaryOperation(operant)
         self.type = dataFactory.get(type)
@@ -359,7 +362,7 @@ class Binary(Instruction):
     def execute(self, pc, memory, val2, val1, *stack):
         # val2, val1 are the two top values on the stack
         if self.type == None:
-            l.error("type None detected on binary operation")
+            l.warning("type None detected on binary operation")
             return Result.Unknown
         
         match(self.operant):
@@ -398,6 +401,6 @@ class Cast(Instruction):
         self.toType = dataFactory.get(to)
     
     def execute(self, pc, memory, head, *stack):
-        return [State(pc, memory, self.toType(head.value), stack)]
+        return [State(pc, memory, self.toType(head.value), *stack)]
     
 instructionFactory = SubclassFactory(Instruction, "opr")
