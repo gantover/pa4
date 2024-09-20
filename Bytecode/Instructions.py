@@ -57,13 +57,33 @@ class If(Instruction):
         self.target = target
     
     def execute(self, pc, memory, val1, val2, *stack):
+        jump = State(self.target, memory, *stack)
+        stay = State(pc, memory, *stack)
+        
+        cases = {
+            BranchCondition.GreaterThan: lambda: val2.value > val1.value,
+            BranchCondition.GreaterEqual: lambda: val2.value >= val1.value,
+            BranchCondition.NotEqual: lambda: val2.value != val1.value,
+            BranchCondition.Equal: lambda: val2.value == val1.value,
+            BranchCondition.LessThan: lambda: val2.value < val1.value,
+            BranchCondition.LessEqual: lambda: val2.value <= val1.value,
+        }
+        
+        try:
+            l.debug(f"If: {val2.value} {self.condition} {val1.value}")
+            
+            if cases[self.condition]():
+                l.debug("jumping")
+                return [jump]
+            else:
+                l.debug("staying")
+                return [stay]
+        except Exception as e:
+            print("Cannot evaluate if early")
         
         # TODO:: Implement branching chance
         
-        if self.target <= pc:
-            return Result.RunsForever
-        
-        return [State(pc, memory, *stack), State(self.target, memory, *stack)]
+        return [stay, jump]
 
 class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
     condition: BranchCondition
@@ -75,13 +95,34 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
         self.target = target
     
     def execute(self, pc, memory, val1, *stack):
+        jump = State(self.target, memory, *stack)
+        stay = State(pc, memory, *stack)
+        
+        cases = {
+            BranchCondition.GreaterThan: lambda: val1.value > 0,
+            BranchCondition.GreaterEqual: lambda: val1.value >= 0,
+            BranchCondition.NotEqual: lambda: val1.value != 0,
+            BranchCondition.Equal: lambda: val1.value == 0,
+            BranchCondition.LessThan: lambda: val1.value < 0,
+            BranchCondition.LessEqual: lambda: val1.value <= 0,
+        }
+        
+        try:
+            l.debug(f"If: {val1.value} {self.condition} {0}")
+            
+            if cases[self.condition]():
+                l.debug("jumping")
+                return [jump]
+            else:
+                l.debug("staying")
+                return [stay]
+        except Exception as e:
+            print("Cannot evaluate if early")
         
         # TODO:: Implement branching chance
         
-        if self.target <= pc:
-            return Result.RunsForever
-        
-        return [State(pc, memory, *stack), State(self.target, memory, *stack)]
+        return [stay, jump]
+
     
 class NewArray(Instruction):
     dimensions: int
@@ -286,7 +327,9 @@ class Incr(Instruction): # TODO:: give better name, needs factory update first
     
     def execute(self, pc, memory, *stack):
         
-        memory[self.index].value += self.amount
+        cur = memory[self.index]
+        
+        memory[self.index] = type(cur)(cur.value + self.amount)
         
         return [State(pc, memory, *stack)]
 

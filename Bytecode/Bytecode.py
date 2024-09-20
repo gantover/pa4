@@ -51,12 +51,17 @@ else:
 try:
     import BytecodeAnalyser
 except Exception as e:
-    print(e)
+    print("import error", e)
 
 try:
-    BytecodeAnalyser.parseMethod(m).run(100)
+    parsed = BytecodeAnalyser.parseMethod(m)
 except Exception as e:
-    print(e)
+    print("parsing error:", e)
+    
+try:
+    parsed.run(100)
+except Exception as e:
+    print("running error:", e)
     
 # l.debug("trying to find an assertion error being created")
 # # Look if the method contains an assertion error:
