@@ -54,7 +54,7 @@ except Exception as e:
     print(e)
 
 try:
-    BytecodeAnalyser.parseMethod(m).run(30)
+    BytecodeAnalyser.parseMethod(m).run(100)
 except Exception as e:
     print(e)
     

@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 
 from Datatypes import Data, Ref, dataFactory
-from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition
+from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
 
@@ -60,6 +60,9 @@ class If(Instruction):
         
         # TODO:: Implement branching chance
         
+        if self.target <= pc:
+            return Result.RunsForever
+        
         return [State(pc, memory, *stack), State(self.target, memory, *stack)]
 
 class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
@@ -74,6 +77,9 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
     def execute(self, pc, memory, val1, *stack):
         
         # TODO:: Implement branching chance
+        
+        if self.target <= pc:
+            return Result.RunsForever
         
         return [State(pc, memory, *stack), State(self.target, memory, *stack)]
     
@@ -210,26 +216,44 @@ class New(Instruction):
         self.javaClass = kwargs["class"]
         
     def execute(self, pc, memory, *stack):
-        
-        if "AssertionError" in self.javaClass:
-            return Result.AssertionError
-        
-        return Result.Unknown
-        
-        ref = Ref(self.javaClass) # TODO:: null refrence for now
-        
-        return [State(pc, memory, ref, *stack)]
-    
+        return [State(pc, memory, Ref(self.javaClass), *stack)]
+
 class Invoke(Instruction):
-    access: any
-    method: any
+    access: InvokeType
+    method: MethodDefinition
     
     def __init__(self, opr, access, method, offset):
         self.name = opr
-        self.access = access
-        self.method = method
+        self.access = InvokeType(access)
+        self.method = MethodDefinition(**method)
     
     def execute(self, pc, memory, *stack):
+        
+        args = stack[:len(self.method.args)]
+        stack = stack[len(self.method.args):]
+        
+        #find the method somehow...
+        
+        # match self.access:
+        #     case InvokeType.Dynamic:
+                
+        #     case InvokeType.Static:
+                
+        #     case InvokeType.Virtual:
+        #         methodRef, *stack = stack
+                
+        #     case InvokeType.Special:
+        #         methodRef, *stack = stack
+                
+        #     case InvokeType.Interface:
+        #         methodRef, *stack = stack
+                
+        
+        if self.access not in {InvokeType.Dynamic, InvokeType.Static}:
+            methodRef, *stack = stack
+        
+            if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
+                return [State(pc, memory, *stack)]
         
         return Result.Unknown # TODO::
         print("Invoking is illegal and you should feel bad <3")
@@ -242,7 +266,12 @@ class Throw(Instruction):
     
     def execute(self, pc, memory, ref, *stack):
         
-        print("Throwable thrown")
+        if isinstance(ref, Ref) and ref.refType == "java/lang/AssertionError":
+            return Result.AssertionError
+        
+        return Result.Unknown # An exception was thrown, but not one we're looking for
+
+        #TODO: consider moving to return
         
         return [State(pc, memory, ref)]
 
@@ -269,15 +298,19 @@ class GoTo(Instruction):
         self.target = target
     
     def execute(self, pc, memory, *stack):
+        
+        if self.target <= pc:
+            return Result.RunsForever
+        
         return [State(self.target, memory, *stack)]
 
 class Binary(Instruction):
-    operant: str # TODO:: consider enum
+    operant: BinaryOperation
     type: classmethod
     
     def __init__(self, opr, operant, type, offset):
         self.name = opr
-        self.operant = operant
+        self.operant = BinaryOperation(operant)
         self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, val2, val1, *stack):
@@ -285,14 +318,15 @@ class Binary(Instruction):
         if self.type == None:
             l.error("type None detected on binary operation")
             return Result.Unknown
+        
         match(self.operant):
-            case "add":
+            case BinaryOperation.Addition:
                 result = self.type(val1.value + val2.value)
-            case "sub":
+            case BinaryOperation.Subtraction:
                 result = self.type(val1.value - val2.value)
-            case "mul":
+            case BinaryOperation.Multiplication:
                 result = self.type(val1.value * val2.value)
-            case "div":
+            case BinaryOperation.Division:
                 print(f"division detected : val1 {val1.value} / val2 {val2.value}")
                 try:
                     result = self.type(val1.value / val2.value)
@@ -301,7 +335,7 @@ class Binary(Instruction):
                 except:
                     l.error(f"unimplemented division operation for type {self.type}")
                     return Result.Unknown
-            case "rem":
+            case BinaryOperation.Remainder:
                 result = self.type(val1.value % val2.value)
             case _:
                 l.error("unimplemented binary operation")

@@ -48,6 +48,20 @@ class BranchCondition(Enum):
     LessThan = "lt"
     LessEqual = "le"
     
+class InvokeType(Enum):
+    Special = "special"
+    Virtual = "virtual"
+    Static = "static"
+    Dynamic = "dynamic"
+    Interface = "interface"
+    
+class BinaryOperation(Enum):
+    Addition = "add"
+    Subtraction = "sub"
+    Multiplication = "mul"
+    Division = "div"
+    Remainder = "rem"
+    
 class FieldDefinition:
     className : str
     fieldName: str 
@@ -59,15 +73,15 @@ class FieldDefinition:
         self.type = dataFactory.get(type)
 
 class MethodDefinition:
-    args : list[any]
+    args : list[classmethod]
     is_interface: bool 
     methodName: any
     ref: any
     returns: classmethod
     
     def __init__(self, args, is_interface, name, ref, returns, **kwargs):
-        self.args = args
-        self.is_interface = is_interface
+        self.args = [dataFactory.get(arg) for arg in args]
+        self.is_interface = is_interface #kwargs.get("is_interface") or False
         self.name = name
         self.ref = ref
         self.returns = dataFactory.get(returns)

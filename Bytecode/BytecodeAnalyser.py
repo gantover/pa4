@@ -46,6 +46,7 @@ class JavaSimulator:
                     result = instruction.execute(pc + 1, memory, *stack)
                 except Exception as e:
                     print(f'exception at {i}, while running instruction {instruction}: {e}')
+                    unknowns += 1
                     break
                 
                 # checks wheter we have a final result or if the state
@@ -66,8 +67,8 @@ class JavaSimulator:
                         # it means that we are into a running forever scenario
                         # the condition to loop was true and since the state has not
                         # been updated, the condition stays true
-                        else:
-                            results[Result.RunsForever] += 1
+                        # else:
+                        #     results[Result.RunsForever] += 1
             else:
                 break
         
