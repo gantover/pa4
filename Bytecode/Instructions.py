@@ -79,7 +79,7 @@ class If(Instruction):
                 l.debug("staying")
                 return [stay]
         except Exception as e:
-            print("Cannot evaluate if early")
+            l.debug("Cannot evaluate if early")
         
         # TODO:: Implement branching chance
         
@@ -117,7 +117,7 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
                 l.debug("staying")
                 return [stay]
         except Exception as e:
-            print("Cannot evaluate if early")
+            l.debug("Cannot evaluate if early")
         
         # TODO:: Implement branching chance
         
@@ -370,7 +370,7 @@ class Binary(Instruction):
             case BinaryOperation.Multiplication:
                 result = self.type(val1.value * val2.value)
             case BinaryOperation.Division:
-                print(f"division detected : val1 {val1.value} / val2 {val2.value}")
+                l.debug(f"division detected : val1 {val1.value} / val2 {val2.value}")
                 try:
                     result = self.type(val1.value / val2.value)
                 except ZeroDivisionError:
