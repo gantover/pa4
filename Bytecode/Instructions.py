@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 
-from Datatypes import Data, Ref, dataFactory
+from Datatypes import Data, Ref, dataFactory, Unknown
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
@@ -60,26 +60,27 @@ class If(Instruction):
         jump = State(self.target, memory, *stack)
         stay = State(pc, memory, *stack)
         
-        cases = {
+        case = {
             BranchCondition.GreaterThan: lambda: val2.value > val1.value,
             BranchCondition.GreaterEqual: lambda: val2.value >= val1.value,
             BranchCondition.NotEqual: lambda: val2.value != val1.value,
             BranchCondition.Equal: lambda: val2.value == val1.value,
             BranchCondition.LessThan: lambda: val2.value < val1.value,
-            BranchCondition.LessEqual: lambda: val2.value <= val1.value,
-        }
+            BranchCondition.LessEqual: lambda: val2.value <= val1.value
+        }[self.condition]
         
-        try:
-            l.debug(f"If: {val2.value} {self.condition} {val1.value}")
-            
-            if cases[self.condition]():
-                l.debug("jumping")
-                return [jump]
-            else:
-                l.debug("staying")
-                return [stay]
-        except Exception as e:
+        l.debug(f"If: {val2.value} {self.condition} {val1.value}")
+        
+        result = case()
+        
+        if isinstance(result, Unknown):
             l.debug("Cannot evaluate if early")
+        elif result:
+            l.debug("jumping")
+            return [jump]
+        else:
+            l.debug("staying")
+            return [stay]
         
         # TODO:: Implement branching chance
         
@@ -94,32 +95,33 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
         self.condition = BranchCondition(condition)
         self.target = target
     
-    def execute(self, pc, memory, val1, *stack):
-        l.debug(f"{val1} {self.condition} 0 ?")
+    def execute(self, pc, memory, val, *stack):
+        l.debug(f"{val} {self.condition} 0 ?")
 
         jump = State(self.target, memory, *stack)
         stay = State(pc, memory, *stack)
         
-        cases = {
-            BranchCondition.GreaterThan: lambda: val1.value > 0,
-            BranchCondition.GreaterEqual: lambda: val1.value >= 0,
-            BranchCondition.NotEqual: lambda: val1.value != 0,
-            BranchCondition.Equal: lambda: val1.value == 0,
-            BranchCondition.LessThan: lambda: val1.value < 0,
-            BranchCondition.LessEqual: lambda: val1.value <= 0,
-        }
+        case = {
+            BranchCondition.GreaterThan: lambda: val.value > 0,
+            BranchCondition.GreaterEqual: lambda: val.value >= 0,
+            BranchCondition.NotEqual: lambda: val.value != 0,
+            BranchCondition.Equal: lambda: val.value == 0,
+            BranchCondition.LessThan: lambda: val.value < 0,
+            BranchCondition.LessEqual: lambda: val.value <= 0,
+        }[self.condition]
         
-        try:
-            l.debug(f"If: {val1.value} {self.condition} {0}")
-            
-            if cases[self.condition]():
-                l.debug("jumping")
-                return [jump]
-            else:
-                l.debug("staying")
-                return [stay]
-        except Exception as e:
+        l.debug(f"If: {val.value} {self.condition} 0 ")
+        
+        result = case()
+        
+        if isinstance(result, Unknown):
             l.debug("Cannot evaluate if early")
+        elif result:
+            l.debug("jumping")
+            return [jump]
+        else:
+            l.debug("staying")
+            return [stay]
         
         # TODO:: Implement branching chance
         
@@ -194,7 +196,7 @@ class array_load(Instruction):
     
     def execute(self, pc, memory, index, ref : Data, *stack):
         
-        if ref.value == None:
+        if memory[ref] == None:
             return Result.NullPointer
         
         if isinstance(index.value, int):
@@ -245,9 +247,9 @@ class Get(Instruction):
             ref, *stack = stack
         
         if self.field.type == None:
-            value = None
+            l.warning("Field type in get is None")
         else:
-            value = self.field.type(None) # TODO:: get data from field
+            value = self.field.type(Unknown()) # TODO:: get data from field
         
         return [State(pc, memory, value, *stack)]
 
@@ -360,34 +362,30 @@ class Binary(Instruction):
         self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, val2, val1, *stack):
+        results = []
+        
         # val2, val1 are the two top values on the stack
         if self.type == None:
             l.warning("type None detected on binary operation")
             return Result.Unknown
         
-        match(self.operant):
-            case BinaryOperation.Addition:
-                result = self.type(val1.value + val2.value)
-            case BinaryOperation.Subtraction:
-                result = self.type(val1.value - val2.value)
-            case BinaryOperation.Multiplication:
-                result = self.type(val1.value * val2.value)
-            case BinaryOperation.Division:
-                l.debug(f"division detected : val1 {val1.value} / val2 {val2.value}")
-                try:
-                    result = self.type(val1.value / val2.value)
-                except ZeroDivisionError:
-                    return Result.DivisionByZero
-                except:
-                    l.error(f"unimplemented division operation for type {self.type}")
-                    return Result.Unknown
-            case BinaryOperation.Remainder:
-                result = self.type(val1.value % val2.value)
-            case _:
-                l.error("unimplemented binary operation")
-                return Result.Unknown
+        if self.operant == BinaryOperation.Division and val2.value == 0 or isinstance(val2.value, Unknown):
+            results.append(Result.DivisionByZero)
+        
+        op = {
+            BinaryOperation.Addition: lambda: self.type(val1.value + val2.value),
+            BinaryOperation.Subtraction: lambda: self.type(val1.value - val2.value),
+            BinaryOperation.Multiplication: lambda: self.type(val1.value * val2.value),
+            BinaryOperation.Remainder: lambda: self.type(val1.value % val2.value),
+            BinaryOperation.Division: lambda: self.type(val1.value / val2.value)
+        }[self.operant]
+        
+        try:
+            results.append(State(pc, memory, op(), *stack))
+        except Exception as e:
+            l.debug(f'Exception caught in binary: {e}')
 
-        return [State(pc, memory, result, *stack)]
+        return results
         # the result is simply put on top of the stack, waiting to be stored
         
 

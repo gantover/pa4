@@ -71,6 +71,9 @@ class FieldDefinition:
         self.className = kwargs["class"]
         self.fieldName = name
         self.type = dataFactory.get(type)
+        
+        if self.type == None:
+            print(f"unknown type: {type}")
 
 class MethodDefinition:
     args : list[classmethod]

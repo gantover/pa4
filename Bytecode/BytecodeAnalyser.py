@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory
-from Datatypes import dataFactory
+from Datatypes import dataFactory, Unknown
 from State import State, Result
 
 class JavaSimulator:
@@ -23,7 +23,6 @@ class JavaSimulator:
     
     def run(self, depth=100):
         results = dict()
-        unknowns = 0
         
         for result in Result:
             results.setdefault(result, 0)
@@ -44,25 +43,33 @@ class JavaSimulator:
                 
                 try:
                     result = instruction.execute(pc + 1, memory, *stack)
+                    
+                    l.debug(f'Result: {result}')
                 except Exception as e:
                     print(f'exception at {i}, while running instruction {instruction}: {e}')
-                    unknowns += 1
-                    break
+                    result = Result.Unknown
+                    
+                
+                if isinstance(result, Result) or isinstance(result, State):
+                    result = [result]
                 
                 # checks wheter we have a final result or if the state
                 # should continue to be updated or if we branched
-                if isinstance(result, Result):
-                    if result == Result.Unknown:
-                        unknowns += 1
-                    else:
-                        results[result] += 1
-                else:
+                # if isinstance(result, Result):
+                #     if result == Result.Unknown:
+                #         unknowns += 1
+                #     else:
+                #         results[result] += 1
+                # else:
                     # there could be multiple branch states
                     # for instance if statement returns two states
-                    for state in result:
-                        if state not in self.explored:
-                            self.frontier.append(state)
-                            self.explored.add(state)
+                    
+                for r in result:
+                    if isinstance(r, Result):
+                        results[r] += 1
+                    elif r not in self.explored:
+                        self.frontier.append(r)
+                        self.explored.add(r)
                         # if the same exact state is added twice to explored
                         # it means that we are into a running forever scenario
                         # the condition to loop was true and since the state has not
@@ -74,12 +81,12 @@ class JavaSimulator:
         
         if i + 1 != depth:
             # sum is used to weight the probabilites of each result
-            sum = 0
+            sum = 0 #-results[Result.Unknown]
             
             for value in results.values():
                 sum += value
             
-            if sum > 0.5 and unknowns == 0:
+            if results[Result.Unknown] == 0:
                 for result in Result:
                     if (result == Result.Unknown):
                         continue
@@ -96,6 +103,6 @@ def parseMethod(method):
         instructions.append(instructionFactory.parse(instruction))
     
     for i, param in enumerate(method["params"]):
-        memory[i] = dataFactory.get(param["type"]["base"])
+        memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
         
     return JavaSimulator(instructions, State(pc, memory, *stack))

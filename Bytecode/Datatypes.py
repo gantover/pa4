@@ -22,51 +22,63 @@ class Byte(Data):
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Byte = {self.value}>'
     
 class Short(Data):
     value: int
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Short = {self.value}>'
 
 class Integer(Data):
     value: int
     
     def __init__(self, value, **_):
         self.value = value
-
-# there are instances in bytecode where the type is int
-# instead of integer, this is a temporary fix to be able
-# to treat int as well
-class Int(Data):
-    value: int
     
-    def __init__(self, value, **_):
-        self.value = value
+    def __repr__(self) -> str:
+        return f'<Integer = {self.value}>'
     
 class Long(Data):
     value: int
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Long = {self.value}>'
 
 class Float(Data):
     value: float
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Float = {self.value}>'
 
 class Double(Data):
     value: float
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Double = {self.value}>'
 
 class Char(Data):
     value: str
     
     def __init__(self, value, **_):
         self.value = value
+        
+    def __repr__(self) -> str:
+        return f'<Char = {self.value}>'
 
 class Ref(Data):
     refType: str
@@ -82,5 +94,33 @@ class Ref(Data):
         # True at the same time
         return not(self == other)
     
+class Unknown:
+    def __add__(self, other): return Unknown()
+    def __sub__(self, other): return Unknown()
+    def __mul__(self, other): return Unknown()
+    def __truediv__(self, other): return Unknown()
+    def __floordiv__(self, other): return Unknown()
+    def __mod__(self, other): return Unknown()
+    
+    def __lt__(self, other): return Unknown()
+    def __gt__(self, other): return Unknown()
+    def __le__(self, other): return Unknown()
+    def __ge__(self, other): return Unknown()
+    def __eq__(self, other): return Unknown()
+    def __ne__(self, other): return Unknown()
+    
+    def __radd__(self, other): return Unknown()
+    def __rsub__(self, other): return Unknown()
+    def __rmul__(self, other): return Unknown()
+    def __rmatmul__(self, other): return Unknown()
+    def __rtruediv__(self, other): return Unknown()
+    def __rfloordiv__(self, other): return Unknown()
+    def __rmod__(self, other): return Unknown()
+
+    def __repr__(self):
+        return "<Unkown>"
+
+    
 dataFactory = SubclassFactory(Data, "type")
 dataFactory["int"] = Integer
+dataFactory["boolean"] = Byte

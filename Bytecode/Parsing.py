@@ -3,6 +3,14 @@
 class SubclassFactory(dict):
     typeField: str
     
+    def get(self, value):
+        result = super().get(value)
+        
+        if result == None:
+            print(f'Sublassfactory returned None for value {value}')
+            
+        return result
+    
     def __init__(self, base_class, typeField):
         # ex : base_class can be Data and subclass will be Integer, Short,...
         self.typeField = typeField 
@@ -13,7 +21,7 @@ class SubclassFactory(dict):
     
     def parse(self, data: dict):
         if data == None:
-            return None
+            print(f'None value passed into subclass factory')
         
         constructor = self.get(data[self.typeField])
 
