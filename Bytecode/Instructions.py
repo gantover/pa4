@@ -1,5 +1,6 @@
 ﻿#!/usr/bin/env python3
 
+from pathlib import Path
 from Datatypes import Data, Ref, dataFactory, Unknown
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
@@ -276,7 +277,29 @@ class Invoke(Instruction):
         
         args = stack[:len(self.method.args)]
         stack = stack[len(self.method.args):]
-        
+        classfile = (Path("decompiled") / self.name).with_suffix(
+            ".json"
+        )
+
+        with open(classfile) as f:
+            l.debug("read decompiled classfile %s", classfile)
+            classfile = json.load(f)
+
+        l.debug("looking up method")
+        # Lookup method
+        for m in classfile["methods"]:
+            if (
+                m["name"] == i["method_name"]
+                and len(i["params"]) == len(m["params"])
+                and all(
+                    TYPE_LOOKUP[tn] == t["type"]["base"]
+                    for tn, t in zip(i["params"], m["params"])
+                )
+            ):
+                break
+        else:
+            print("Could not find method")
+
         #find the method somehow...
         
         # match self.access:
@@ -373,11 +396,11 @@ class Binary(Instruction):
             results.append(Result.DivisionByZero)
         
         op = {
-            BinaryOperation.Addition: lambda: self.type(val1.value + val2.value),
-            BinaryOperation.Subtraction: lambda: self.type(val1.value - val2.value),
-            BinaryOperation.Multiplication: lambda: self.type(val1.value * val2.value),
-            BinaryOperation.Remainder: lambda: self.type(val1.value % val2.value),
-            BinaryOperation.Division: lambda: self.type(val1.value / val2.value)
+            BinaryOperation.Addition: lambda: self.type(val1 + val2),
+            BinaryOperation.Subtraction: lambda: self.type(val1 - val2),
+            BinaryOperation.Multiplication: lambda: self.type(val1 * val2),
+            BinaryOperation.Remainder: lambda: self.type(val1 % val2),
+            BinaryOperation.Division: lambda: self.type(val1 / val2)
         }[self.operant]
         
         try:
