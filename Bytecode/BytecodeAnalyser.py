@@ -7,8 +7,9 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory
-from Datatypes import dataFactory, Unknown
+from Datatypes import dataFactory, Unknown, Ref
 from State import State, Result
+from random import random, randint
 
 class JavaSimulator:
     instructions: list[Instruction]
@@ -105,5 +106,52 @@ def parseMethod(method):
     
     for i, param in enumerate(method["params"]):
         memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
-        
+
     return JavaSimulator(instructions, State(pc, memory, *stack))
+
+def dynamicParseMethod(method):
+    instructions = []
+    pc, memory, *stack = State(0, dict())
+    
+    for instruction in method["code"]["bytecode"]:
+        # l.debug(f'Parsing instruction {instruction}')
+        instructions.append(instructionFactory.parse(instruction))
+    
+    for i, param in enumerate(method["params"]):
+        memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
+    
+    for i, param in enumerate(method["params"]):
+        generate(param, memory, i)
+
+    simulator = JavaSimulator(instructions, State(pc, memory, *stack))
+
+def generate(param, memory: dict, index: int):
+    try:
+        match(param := param["type"]["base"]):
+            case "integer":
+                var = dataFactory.get("integer")
+                var.val = randint(-1000,1000)
+                # TODO : implement a number generation algorithm
+                # based on static values loaded in the binary
+            case "boolean":
+                var = dataFactory.get("boolean")
+                var.val = bool(randint(0,1))
+            case _:
+                l.error(f"unhandled data type in parameter : {param}")
+        memory[index] = var
+    except:
+        # we should then have an array
+        try:
+            match(sup_param := param["type"]["kind"]):
+                case "array":
+                    lenght = randint(1, 10)
+                    ref = Ref("Array")
+                    memory[ref] = lenght
+                    param = param["type"]
+                    for i in range(lenght):
+                        generate(param, memory, ref[i])
+
+                case _:
+                    pass
+        except:
+            l.error(f"unhandled method parameter type : {param}")
