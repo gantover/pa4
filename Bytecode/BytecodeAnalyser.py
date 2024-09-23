@@ -6,10 +6,12 @@ from typing import List as PyList
 from enum import Enum
 from Debug import l
 
-from Instructions import Instruction, instructionFactory
+from Instructions import Instruction, instructionFactory, staticVariableCollect
 from Datatypes import dataFactory, Unknown, Ref
 from State import State, Result
 from random import random, randint
+
+
 
 class JavaSimulator:
     instructions: list[Instruction]
