@@ -25,8 +25,35 @@ class Byte(Data):
         
     def __repr__(self) -> str:
         return f'<Byte = {self.value}>'
-    
-class Short(Data):
+
+class BinaryOpMixin:
+    def __add__(self, other):
+        return self.__class__(self.value + other.value)
+
+    def __sub__(self, other):
+        return self.__class__(self.value - other.value)
+
+    def __mul__(self, other):
+        return self.__class__(self.value * other.value)
+
+    def __truediv__(self, other):
+        return self.__class__(self.value / other.value)
+        
+    def __floordiv__(self, other): 
+        return self.__class__(self.value // other.value)
+
+    def __mod__(self, other):
+        return self.__class__(self.value % other.value)
+
+class IntegerOpMixin(BinaryOpMixin):
+    def __truediv__(self, other):
+        return self.__floordiv__(other)
+
+    def __hash__(self):
+        return self.value
+
+
+class Short(Data, IntegerOpMixin):
     value: int
     
     def __init__(self, value, **_):
@@ -35,7 +62,7 @@ class Short(Data):
     def __repr__(self) -> str:
         return f'<Short = {self.value}>'
 
-class Integer(Data):
+class Integer(Data, IntegerOpMixin):
     value: int
     
     def __init__(self, value, **_):
@@ -44,7 +71,7 @@ class Integer(Data):
     def __repr__(self) -> str:
         return f'<Integer = {self.value}>'
     
-class Long(Data):
+class Long(Data, IntegerOpMixin):
     value: int
     
     def __init__(self, value, **_):
@@ -53,7 +80,7 @@ class Long(Data):
     def __repr__(self) -> str:
         return f'<Long = {self.value}>'
 
-class Float(Data):
+class Float(Data, BinaryOpMixin):
     value: float
     
     def __init__(self, value, **_):
@@ -62,7 +89,7 @@ class Float(Data):
     def __repr__(self) -> str:
         return f'<Float = {self.value}>'
 
-class Double(Data):
+class Double(Data, BinaryOpMixin):
     value: float
     
     def __init__(self, value, **_):
@@ -71,7 +98,7 @@ class Double(Data):
     def __repr__(self) -> str:
         return f'<Double = {self.value}>'
 
-class Char(Data):
+class Char(Data, BinaryOpMixin):
     value: str
     
     def __init__(self, value, **_):
