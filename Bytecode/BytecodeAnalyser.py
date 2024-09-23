@@ -100,6 +100,7 @@ def parseMethod(method):
     pc, memory, *stack = State(0, dict())
     
     for instruction in method["code"]["bytecode"]:
+        # l.debug(f'Parsing instruction {instruction}')
         instructions.append(instructionFactory.parse(instruction))
     
     for i, param in enumerate(method["params"]):

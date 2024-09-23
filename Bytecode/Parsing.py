@@ -22,6 +22,7 @@ class SubclassFactory(dict):
     def parse(self, data: dict):
         if data == None:
             print(f'None value passed into subclass factory')
+            return None
         
         constructor = self.get(data[self.typeField])
 
