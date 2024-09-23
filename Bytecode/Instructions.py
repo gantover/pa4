@@ -373,11 +373,11 @@ class Binary(Instruction):
             results.append(Result.DivisionByZero)
         
         op = {
-            BinaryOperation.Addition: lambda: self.type(val1.value + val2.value),
-            BinaryOperation.Subtraction: lambda: self.type(val1.value - val2.value),
-            BinaryOperation.Multiplication: lambda: self.type(val1.value * val2.value),
-            BinaryOperation.Remainder: lambda: self.type(val1.value % val2.value),
-            BinaryOperation.Division: lambda: self.type(val1.value / val2.value)
+            BinaryOperation.Addition: lambda: val1 + val2,
+            BinaryOperation.Subtraction: lambda: val1 - val2,
+            BinaryOperation.Multiplication: lambda: val1 * val2,
+            BinaryOperation.Remainder: lambda: val1 % val2,
+            BinaryOperation.Division: lambda: val1 / val2
         }[self.operant]
         
         try:
