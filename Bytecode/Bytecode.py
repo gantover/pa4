@@ -19,6 +19,7 @@ try:
 except Exception as e:
     print("import error", e)
 
+l.debug("--- STATIC ---")
 try:
     parsed = BytecodeAnalyser.parseMethod(m)
 except Exception as e:
@@ -28,3 +29,9 @@ try:
     parsed.run(100)
 except Exception as e:
     print("running error:", e)
+
+l.debug("--- DYNAMIC ---")
+try:
+    BytecodeAnalyser.dynamicParseMethod(m)
+except Exception as e:
+    print("error:", e)
