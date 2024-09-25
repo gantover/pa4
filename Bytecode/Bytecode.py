@@ -28,7 +28,8 @@ except Exception as e:
     
 try:
     staticVariableCollect.collecting = True
-    parsed.run(100)
+    results = parsed.run(100)
+    parsed.interpretResults(results)
     staticVariableCollect.collecting = False
 except Exception as e:
     print("running error:", e)
@@ -38,7 +39,7 @@ except Exception as e:
 l.debug("--- DYNAMIC ---")
 try:
     l.debug(f"static variables collected : {staticVariableCollect}")
-    BytecodeAnalyser.dynamicParseMethod(m)
+    print(BytecodeAnalyser.dynamicParseMethod(m, parsed))
 except Exception as e:
     print("error:", e)
 """

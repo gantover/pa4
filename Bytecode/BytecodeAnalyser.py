@@ -24,7 +24,11 @@ class JavaSimulator:
         self.frontier = [initial_state]
         self.explored = {initial_state}
     
-    def run(self, depth=100):
+    def update(self, initial_state):
+        self.frontier = [initial_state]
+        self.explored = {initial_state}
+    
+    def run(self, depth=100, debug=True) -> dict | None:
         results = dict()
         
         for result in Result:
@@ -38,16 +42,18 @@ class JavaSimulator:
                 
                 pc, memory, *stack = state
 
-                l.debug(f"-----")
-                l.debug(f"PC : {pc}")
-                l.debug(f"current instruction : {instruction.name}")
-                l.debug(f"Stack : {stack}")
-                l.debug(f"Memory : {memory}")
+                if debug:
+                    l.debug(f"-----")
+                    l.debug(f"PC : {pc}")
+                    l.debug(f"current instruction : {instruction.name}")
+                    l.debug(f"Stack : {stack}")
+                    l.debug(f"Memory : {memory}")
                 
                 try:
                     result = instruction.execute(pc + 1, memory, *stack)
                     
-                    l.debug(f'Result: {result}')
+                    if debug:
+                        l.debug(f'Result: {result}')
                 except Exception as e:
                     print(f'exception at {i}, while running instruction {instruction}: {e}')
                     result = Result.Unknown
@@ -83,20 +89,26 @@ class JavaSimulator:
                 break
         
         if i + 1 != depth:
-            # sum is used to weight the probabilites of each result
-            sum = 0 #-results[Result.Unknown]
+            return results
+            # if it fails and return None, this will be intercepted in the exception
+
+    @staticmethod
+    def interpretResults(results):
+        # sum is used to weight the probabilites of each result
+        sum = 0 #-results[Result.Unknown]
             
-            for value in results.values():
-                sum += value
+        for value in results.values():
+            sum += value
             
-            if results[Result.Unknown] == 0:
-                for result in Result:
-                    if (result == Result.Unknown):
-                        continue
+        if results[Result.Unknown] == 0:
+            for result in Result:
+                if (result == Result.Unknown):
+                    continue
                     
-                    value = results[result]
+                value = results[result]
                     
-                    print(f'{result.value};{value/sum*100}%')
+                print(f'{result.value};{value/sum*100}%')
+
 
 def parseMethod(method):
     instructions = []
@@ -111,26 +123,28 @@ def parseMethod(method):
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 
-def dynamicParseMethod(method):
-    instructions = []
-    pc, memory, *stack = State(0, dict())
+def dynamicParseMethod(method, simulator: JavaSimulator):
+    options = {}
+    for result in Result: options[result] = 0
+    for i in range(100):
+        pc, memory, *stack = State(0, dict())
     
-    for instruction in method["code"]["bytecode"]:
-        instructions.append(instructionFactory.parse(instruction))
-    
-    for i, param in enumerate(method["params"]):
-        generate(param, memory, i)
-    
-    l.debug(f"memory before execution: {memory}")
-
-    simulator = JavaSimulator(instructions, State(pc, memory, *stack))
-    simulator.run()
+        for i, param in enumerate(method["params"]):
+            generate(param, memory, i)
+            l.debug(f"memory before execution: {memory}")
+            simulator.update(State(pc, memory, *stack))
+            results = simulator.run(debug=False)
+            if results[Result.Unknown] == 0:
+                for result in Result:
+                    if results[result] != 0:
+                        options[result] += 1
+    return options
 
 def generate(param, memory: dict, index: int):
     try:
         match(param := param["type"]["base"]):
             case "int":
-                var = dataFactory.get("integer")(randint(-1000,1000))
+                var = dataFactory.get("integer")(randint(-10,10))
                 """TODO : implement a number generation algorithm
                 based on static values loaded in the binary
                 we therefore need to have the static
