@@ -119,7 +119,13 @@ def parseMethod(method):
         instructions.append(instructionFactory.parse(instruction))
     
     for i, param in enumerate(method["params"]):
-        memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
+        if param["type"].get("kind") == "array":
+            # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
+            # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
+            # arrayOfType = param["type"]["type"]["base"]
+            memory[i] = dataFactory.get(param["type"]["kind"])(Unknown())
+        else:
+            memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 

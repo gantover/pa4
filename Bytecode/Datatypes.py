@@ -151,3 +151,4 @@ class Unknown:
 dataFactory = SubclassFactory(Data, "type")
 dataFactory["int"] = Integer
 dataFactory["boolean"] = Byte
+dataFactory["array"] = Ref
