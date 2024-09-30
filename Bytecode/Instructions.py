@@ -16,9 +16,9 @@ class StaticVariableCollect(dict):
         if self.collecting == True:
             if self.get(var.__class__.__name__) == None:
                 self[var.__class__.__name__] = set() 
-                self[var.__class__.__name__].add(var.value) 
+                self[var.__class__.__name__].add(var) 
             else:
-                self[var.__class__.__name__].add(var.value) 
+                self[var.__class__.__name__].add(var) 
     def prepare_integer(self):
         ints = self.get("Integer")
         int_min = min(ints)
@@ -85,15 +85,15 @@ class If(Instruction):
         stay = State(pc, memory, *stack)
         
         case = {
-            BranchCondition.GreaterThan: lambda: val2.value > val1.value,
-            BranchCondition.GreaterEqual: lambda: val2.value >= val1.value,
-            BranchCondition.NotEqual: lambda: val2.value != val1.value,
-            BranchCondition.Equal: lambda: val2.value == val1.value,
-            BranchCondition.LessThan: lambda: val2.value < val1.value,
-            BranchCondition.LessEqual: lambda: val2.value <= val1.value
+            BranchCondition.GreaterThan: lambda: val2> val1,
+            BranchCondition.GreaterEqual: lambda: val2>= val1,
+            BranchCondition.NotEqual: lambda: val2 != val1,
+            BranchCondition.Equal: lambda: val2 == val1,
+            BranchCondition.LessThan: lambda: val2 < val1,
+            BranchCondition.LessEqual: lambda: val2 <= val1
         }[self.condition]
         
-        l.debug(f"If: {val2.value} {self.condition} {val1.value}")
+        l.debug(f"If: {val2} {self.condition} {val1}")
         
         result = case()
         
@@ -126,15 +126,15 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
         stay = State(pc, memory, *stack)
         
         case = {
-            BranchCondition.GreaterThan: lambda: val.value > 0,
-            BranchCondition.GreaterEqual: lambda: val.value >= 0,
-            BranchCondition.NotEqual: lambda: val.value != 0,
-            BranchCondition.Equal: lambda: val.value == 0,
-            BranchCondition.LessThan: lambda: val.value < 0,
-            BranchCondition.LessEqual: lambda: val.value <= 0,
+            BranchCondition.GreaterThan: lambda: val > 0,
+            BranchCondition.GreaterEqual: lambda: val >= 0,
+            BranchCondition.NotEqual: lambda: val != 0,
+            BranchCondition.Equal: lambda: val == 0,
+            BranchCondition.LessThan: lambda: val < 0,
+            BranchCondition.LessEqual: lambda: val <= 0,
         }[self.condition]
         
-        l.debug(f"If: {val.value} {self.condition} 0 ")
+        l.debug(f"If: {val} {self.condition} 0 ")
         
         result = case()
         
@@ -200,11 +200,11 @@ class Array_Store(Instruction):
         # TODO:: Improve bounds check
         # print(index.value)
         
-        if isinstance(index.value, int):
+        if isinstance(index, int):
             # print("instance of int")
-            if index.value < 0:
+            if index < 0:
                 return Result.OutOfBounds
-            if index.value >= memory[ref].value:
+            if index >= memory[ref]:
                 return Result.OutOfBounds
         
         memory[ref[index]] = value # TODO:: implement type safety
@@ -223,11 +223,11 @@ class array_load(Instruction):
         if memory[ref] == None:
             return Result.NullPointer
         
-        if isinstance(index.value, int):
+        if isinstance(index, int):
             # print("instance of int")
-            if index.value < 0:
+            if index < 0:
                 return Result.OutOfBounds
-            if index.value >= memory[ref[index]]:
+            if index >= memory[ref[index]]:
                 return Result.OutOfBounds
         
         value = memory.get(ref[index], Unknown()) #TODO:: type safety, failiure handling, is value known
@@ -381,7 +381,7 @@ class Incr(Instruction): # TODO:: give better name, needs factory update first
         
         cur = memory[self.index]
         
-        memory[self.index] = type(cur)(cur.value + self.amount)
+        memory[self.index] = type(cur)(cur + self.amount)
         
         return [State(pc, memory, *stack)]
 
@@ -417,7 +417,7 @@ class Binary(Instruction):
         #     l.warning("type None detected on binary operation")
         #     return Result.Unknown
         
-        if self.operant == BinaryOperation.Division and val2.value == 0 or isinstance(val2.value, Unknown):
+        if self.operant == BinaryOperation.Division and val2 == 0 or isinstance(val2, Unknown):
             results.append(Result.DivisionByZero)
         
         op = {
@@ -449,6 +449,6 @@ class Cast(Instruction):
     def execute(self, pc, memory, head, *stack):
         raise NotImplementedError() #TODO:: fix
         
-        return [State(pc, memory, self.toType(head.value), *stack)]
+        return [State(pc, memory, self.toType(head), *stack)]
     
 instructionFactory = SubclassFactory(Instruction, "opr")
