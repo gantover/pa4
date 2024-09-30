@@ -148,6 +148,8 @@ class Unknown:
         return id(self)
     
     def __eq__(self, other):
+        if other is None:
+            return False
         if isinstance(other, Unknown):
             return id(self) == id(other)
         return Unknown()
@@ -155,6 +157,8 @@ class Unknown:
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
+        if other is None:
+            return True
         if isinstance(other, Unknown):
             return id(self) != id(other)
         return Unknown()

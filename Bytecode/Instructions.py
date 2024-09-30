@@ -31,6 +31,8 @@ staticVariableCollect = StaticVariableCollect()
 class Instruction:
     name: str
     
+    def __repr__(self): return str(self.__dict__).replace("'", "")[7:-1]
+    
     def execute(self, pc, memory, *stack):
         raise Exception("BAD person, dont create an instance of an abstract base class")
 
@@ -79,6 +81,8 @@ class If(Instruction):
         self.name = opr
         self.condition = BranchCondition(condition)
         self.target = target
+    
+    def __repr__(self): return f'If {self.condition} jump to {self.target}'
     
     def execute(self, pc, memory, val1, val2, *stack):
         jump = State(self.target, memory, *stack)
@@ -211,7 +215,7 @@ class Array_Store(Instruction):
         
         return [State(pc, memory, *stack)]
 
-class array_load(Instruction):
+class Array_Load(Instruction):
     # type:  classmethod
     
     def __init__(self, opr, type, offset):
@@ -219,6 +223,8 @@ class array_load(Instruction):
         # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, index, ref : Data, *stack):
+        
+        l.debug(memory[ref])
         
         if memory[ref] == None:
             return Result.NullPointer
@@ -273,7 +279,7 @@ class Get(Instruction):
         if self.field.type == None:
             l.warning("Field type in get is None")
         else:
-            value = self.field.type(Unknown()) # TODO:: get data from field
+            value = Unknown() # TODO:: get data from field
         
         return [State(pc, memory, value, *stack)]
 

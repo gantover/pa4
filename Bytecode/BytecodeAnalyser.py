@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory, staticVariableCollect
-from Datatypes import Integer, dataFactory, Unknown, Ref
+from Datatypes import Unknown, Ref
 from State import State, Result
 from random import random, randint
 
@@ -45,7 +45,7 @@ class JavaSimulator:
                 if debug:
                     l.debug(f"-----")
                     l.debug(f"PC : {pc}")
-                    l.debug(f"current instruction : {instruction.name}")
+                    l.debug(f"current instruction : {instruction}")
                     l.debug(f"Stack : {stack}")
                     l.debug(f"Memory : {memory}")
                 
@@ -129,9 +129,9 @@ def parseMethod(method):
             # arrayOfType = param["type"]["type"]["base"]
             ref = Ref("Array")
             memory[i] = ref
-            memory[ref] = Integer(Unknown())
+            memory[ref] = Unknown()
         else:
-            memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
+            memory[i] = Unknown()
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 
@@ -192,13 +192,13 @@ def generate(param, memory: dict, index: int, intIterator):
         match(param := param["type"]["base"]):
             case "int":
                 # var = dataFactory.get("integer")(randint(-10,10))
-                var = dataFactory.get("integer")(next(intIterator))
+                var = next(intIterator)
                 """TODO : implement a number generation algorithm
                 based on static values loaded in the binary
                 we therefore need to have the static
                 analysis run before the dynamic one"""
             case "boolean":
-                var = dataFactory.get("boolean")(bool(randint(0,1)))
+                var = bool(randint(0,1))
             case _:
                 l.error(f"unhandled data type in parameter : {param}")
                 # TODO implement more types
