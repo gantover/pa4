@@ -135,14 +135,48 @@ def parseMethod(method):
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 
+class DataIterator():
+    def __init__(self, T):
+        self.data = [] # possibilites generated
+        self.T = T # period
+        self.i = 0 # actual data index
+    def __iter__(self):
+        self.n = 0
+        return self
+    def __next__(self):
+        self.n += 1
+        returned_data = self.data[self.i]
+        if self.n == self.T:
+            self.n = 0
+            self.i += 1
+        if self.i > len(self.data):
+            l.error("outside of bounds data access in iterator, too many iterations")
+            exit(-1)
+        return returned_data 
+
+class IntIterator(DataIterator):
+    def generate(self):
+        sVars = staticVariableCollect.get("Integer")
+        self.data = list(sVars)
+        self.data.append(0)
+        self.l = len(self.data)
+
+
+
 def dynamicParseMethod(method, simulator: JavaSimulator):
     options = {}
     for result in Result: options[result] = 0
-    for i in range(100):
+
+    intIterator = IntIterator(1)
+    intIterator.generate()
+    intIterator = iter(intIterator)
+    length = intIterator.l
+
+    for i in range(length):
         pc, memory, *stack = State(0, dict())
     
         for i, param in enumerate(method["params"]):
-            generate(param, memory, i)
+            generate(param, memory, i, intIterator)
             l.debug(f"memory before execution: {memory}")
             simulator.update(State(pc, memory, *stack))
             results = simulator.run(debug=False)
@@ -150,13 +184,15 @@ def dynamicParseMethod(method, simulator: JavaSimulator):
                 for result in Result:
                     if results[result] != 0:
                         options[result] += 1
+    # print(next(intIterator))
     return options
 
-def generate(param, memory: dict, index: int):
+def generate(param, memory: dict, index: int, intIterator):
     try:
         match(param := param["type"]["base"]):
             case "int":
-                var = dataFactory.get("integer")(randint(-10,10))
+                # var = dataFactory.get("integer")(randint(-10,10))
+                var = dataFactory.get("integer")(next(intIterator))
                 """TODO : implement a number generation algorithm
                 based on static values loaded in the binary
                 we therefore need to have the static
