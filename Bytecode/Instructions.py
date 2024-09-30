@@ -425,7 +425,7 @@ class Binary(Instruction):
             BinaryOperation.Subtraction: lambda: self.type(val1 - val2),
             BinaryOperation.Multiplication: lambda: self.type(val1 * val2),
             BinaryOperation.Remainder: lambda: self.type(val1 % val2),
-            BinaryOperation.Division: lambda: self.type(val1 / val2)
+            BinaryOperation.Division: lambda: self.type(val1 // val2)
         }[self.operant]
         
         try:
