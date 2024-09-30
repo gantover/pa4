@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 
 from pathlib import Path
-from Datatypes import Data, Ref, dataFactory, Unknown
+from Datatypes import Data, Ref, Unknown
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
@@ -39,7 +39,7 @@ class Push(Instruction):
     
     def __init__(self, opr, value, offset):
         self.name = opr
-        self.value = dataFactory.parse(value)
+        self.value = value["value"]
     
     def execute(self, pc, memory, *stack):
         # staticVariableCollect.update(self.value) Breaks with None value
@@ -47,12 +47,12 @@ class Push(Instruction):
 
 class Store(Instruction):
     index: int
-    type: classmethod
+    # type: classmethod
     
     def __init__(self, opr, index, type, offset):
         self.name = opr
         self.index = index
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, *stack):
         memory[self.index], *stack = stack
@@ -61,12 +61,12 @@ class Store(Instruction):
 
 class Load(Instruction):
     index: int
-    type: classmethod
+    # type: classmethod
     
     def __init__(self, opr, index, type, offset):
         self.name = opr
         self.index = index
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
         
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, memory[self.index], *stack)]
@@ -154,12 +154,12 @@ class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
     
 class NewArray(Instruction):
     dimensions: int
-    type:  classmethod
+    # type:  classmethod
     
     def __init__(self, opr, type, dim, offset):
         self.name = opr
         self.dimensions = dim
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
         
         if (dim != 1): #TODO:: implement support for multi dimentional arrays
             print("Can't handle multidimentional array's at the moment")
@@ -186,11 +186,11 @@ class Dup(Instruction):
         return [State(pc, memory, head, head, *stack)]
     
 class Array_Store(Instruction):
-    type:  classmethod
+    # type:  classmethod
     
     def __init__(self, opr, type, offset):
         self.name = opr
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, value, index, ref: Ref, *stack):
         
@@ -212,11 +212,11 @@ class Array_Store(Instruction):
         return [State(pc, memory, *stack)]
 
 class array_load(Instruction):
-    type:  classmethod
+    # type:  classmethod
     
     def __init__(self, opr, type, offset):
         self.name = opr
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, index, ref : Data, *stack):
         
@@ -235,11 +235,11 @@ class array_load(Instruction):
         return [State(pc, memory, value, *stack)]
   
 class Return(Instruction):
-    type:  classmethod
+    # type:  classmethod
     
     def __init__(self, opr, type, offset):
         self.name = opr
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, *stack):
         return Result.Success
@@ -401,31 +401,31 @@ class GoTo(Instruction):
 
 class Binary(Instruction):
     operant: BinaryOperation
-    type: classmethod
+    # type: classmethod
     
     def __init__(self, opr, operant, type, offset):
         # TODO : issue to fix with int/integer types
         self.name = opr
         self.operant = BinaryOperation(operant)
-        self.type = dataFactory.get(type)
+        # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, val2, val1, *stack):
         results = []
         
         # val2, val1 are the two top values on the stack
-        if self.type == None:
-            l.warning("type None detected on binary operation")
-            return Result.Unknown
+        # if self.type == None:
+        #     l.warning("type None detected on binary operation")
+        #     return Result.Unknown
         
         if self.operant == BinaryOperation.Division and val2.value == 0 or isinstance(val2.value, Unknown):
             results.append(Result.DivisionByZero)
         
         op = {
-            BinaryOperation.Addition: lambda: self.type(val1 + val2),
-            BinaryOperation.Subtraction: lambda: self.type(val1 - val2),
-            BinaryOperation.Multiplication: lambda: self.type(val1 * val2),
-            BinaryOperation.Remainder: lambda: self.type(val1 % val2),
-            BinaryOperation.Division: lambda: self.type(val1 // val2)
+            BinaryOperation.Addition: lambda: val1 + val2,
+            BinaryOperation.Subtraction: lambda: val1 - val2,
+            BinaryOperation.Multiplication: lambda: val1 * val2,
+            BinaryOperation.Remainder: lambda: val1 % val2,
+            BinaryOperation.Division: lambda: val1 // val2
         }[self.operant]
         
         try:
@@ -438,15 +438,17 @@ class Binary(Instruction):
         
 
 class Cast(Instruction):
-    fromType: classmethod
-    toType: classmethod
+    # fromType: classmethod
+    # toType: classmethod
     
     def __init__(self, opr, to, **kwargs):
         self.name = opr
-        self.fromType = dataFactory.get(kwargs["from"])
-        self.toType = dataFactory.get(to)
+        # self.fromType = dataFactory.get(kwargs["from"])
+        # self.toType = dataFactory.get(to)
     
     def execute(self, pc, memory, head, *stack):
+        raise NotImplementedError() #TODO:: fix
+        
         return [State(pc, memory, self.toType(head.value), *stack)]
     
 instructionFactory = SubclassFactory(Instruction, "opr")
