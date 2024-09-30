@@ -95,7 +95,7 @@ class JavaSimulator:
     @staticmethod
     def interpretResults(results):
         # sum is used to weight the probabilites of each result
-        sum = 0 #-results[Result.Unknown]
+        sum = -results[Result.Unknown]
             
         # for key, value in results.items():
         #     if value > 0:
@@ -104,12 +104,10 @@ class JavaSimulator:
         for value in results.values():
             sum += value
             
-        if results[Result.Unknown] == 0:
-            for result in Result:
+        if results[Result.Unknown] <= 1:
+            for result, value in results.items():
                 if (result == Result.Unknown):
                     continue
-                    
-                value = results[result]
                     
                 print(f'{result.value};{value/sum*100}%')
 
