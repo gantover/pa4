@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory, staticVariableCollect
-from Datatypes import dataFactory, Unknown, Ref
+from Datatypes import Integer, dataFactory, Unknown, Ref
 from State import State, Result
 from random import random, randint
 
@@ -97,6 +97,10 @@ class JavaSimulator:
         # sum is used to weight the probabilites of each result
         sum = 0 #-results[Result.Unknown]
             
+        # for key, value in results.items():
+        #     if value > 0:
+        #         results[key] = 1
+            
         for value in results.values():
             sum += value
             
@@ -123,7 +127,9 @@ def parseMethod(method):
             # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
             # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
             # arrayOfType = param["type"]["type"]["base"]
-            memory[i] = dataFactory.get(param["type"]["kind"])(Unknown())
+            ref = Ref("Array")
+            memory[i] = ref
+            memory[ref] = Integer(Unknown())
         else:
             memory[i] = dataFactory.get(param["type"]["base"])(Unknown())
 

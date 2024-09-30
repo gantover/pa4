@@ -16,6 +16,11 @@ class Data:
         if isinstance(other, Data):
             return id(self) == id(other)
         return False
+    
+    def __ne__(self, other):
+        # Not strictly necessary, but to avoid having both x==y and x!=y
+        # True at the same time
+        return not(self == other)
 
 class Byte(Data):
     value: int
@@ -116,11 +121,6 @@ class Ref(Data):
     def __init__(self, refType):
         self.refType = refType
     
-    def __ne__(self, other):
-        # Not strictly necessary, but to avoid having both x==y and x!=y
-        # True at the same time
-        return not(self == other)
-    
 class Unknown:
     def __add__(self, other): return Unknown()
     def __sub__(self, other): return Unknown()
@@ -144,9 +144,23 @@ class Unknown:
     def __rfloordiv__(self, other): return Unknown()
     def __rmod__(self, other): return Unknown()
 
+    def __hash__(self):
+        return id(self)
+    
+    def __eq__(self, other):
+        if isinstance(other, Unknown):
+            return id(self) == id(other)
+        return Unknown()
+    
+    def __ne__(self, other):
+        # Not strictly necessary, but to avoid having both x==y and x!=y
+        # True at the same time
+        if isinstance(other, Unknown):
+            return id(self) != id(other)
+        return Unknown()
+    
     def __repr__(self):
         return "<Unkown>"
-
     
 dataFactory = SubclassFactory(Data, "type")
 dataFactory["int"] = Integer

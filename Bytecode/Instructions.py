@@ -42,7 +42,7 @@ class Push(Instruction):
         self.value = dataFactory.parse(value)
     
     def execute(self, pc, memory, *stack):
-        staticVariableCollect.update(self.value)
+        # staticVariableCollect.update(self.value) Breaks with None value
         return [State(pc, memory, self.value, *stack)]
 
 class Store(Instruction):
@@ -230,7 +230,7 @@ class array_load(Instruction):
             if index.value >= memory[ref[index]]:
                 return Result.OutOfBounds
         
-        value = memory[ref[index]] #TODO:: type safety, failiure handling
+        value = memory.get(ref[index], Unknown()) #TODO:: type safety, failiure handling, is value known
         
         return [State(pc, memory, value, *stack)]
   
@@ -298,30 +298,32 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack):
         
-        args = stack[:len(self.method.args)]
-        stack = stack[len(self.method.args):]
-        classfile = (Path("decompiled") / self.name).with_suffix(
-            ".json"
-        )
+        # return Result.Unknown
+        
+        # args = stack[:len(self.method.args)]
+        # stack = stack[len(self.method.args):]
+        # classfile = (Path("decompiled") / self.name).with_suffix(
+        #     ".json"
+        # )
 
-        with open(classfile) as f:
-            l.debug("read decompiled classfile %s", classfile)
-            classfile = json.load(f)
+        # with open(classfile) as f:
+        #     l.debug("read decompiled classfile %s", classfile)
+        #     classfile = json.load(f)
 
-        l.debug("looking up method")
-        # Lookup method
-        for m in classfile["methods"]:
-            if (
-                m["name"] == i["method_name"]
-                and len(i["params"]) == len(m["params"])
-                and all(
-                    TYPE_LOOKUP[tn] == t["type"]["base"]
-                    for tn, t in zip(i["params"], m["params"])
-                )
-            ):
-                break
-        else:
-            print("Could not find method")
+        # l.debug("looking up method")
+        # # Lookup method
+        # for m in classfile["methods"]:
+        #     if (
+        #         m["name"] == i["method_name"]
+        #         and len(i["params"]) == len(m["params"])
+        #         and all(
+        #             TYPE_LOOKUP[tn] == t["type"]["base"]
+        #             for tn, t in zip(i["params"], m["params"])
+        #         )
+        #     ):
+        #         break
+        # else:
+        #     print("Could not find method")
 
         #find the method somehow...
         
