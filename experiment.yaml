@@ -7,11 +7,11 @@ for_science: true
 
 # Underneath here add the tools which you want to run
 tools:
-  test: 
-    technologies:
-      - python
+  # test: 
+  #   technologies:
+  #     - python
 
-    executable: ../pa4/main.py
+  #   executable: ../pa4/main.py
 
   bytecoder: 
     technologies:

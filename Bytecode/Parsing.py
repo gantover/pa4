@@ -1,5 +1,7 @@
 ﻿#!/usr/bin/env python3
 
+from Debug import l
+
 class SubclassFactory(dict):
     typeField: str
     
@@ -7,7 +9,7 @@ class SubclassFactory(dict):
         result = super().get(value)
         
         if result == None:
-            print(f'Sublassfactory returned None for value {value}')
+            l.debug(f'Sublassfactory returned None for value {value}')
             
         return result
     
@@ -21,13 +23,13 @@ class SubclassFactory(dict):
     
     def parse(self, data: dict):
         if data == None:
-            print(f'None value passed into subclass factory')
+            l.debug(f'None value passed into subclass factory')
             return None
         
         constructor = self.get(data[self.typeField])
 
         if constructor is None:
-            print(f'Unknown instruction encountered: {data[self.typeField]}')
+            l.debug(f'Unknown instruction encountered: {data[self.typeField]}')
             return None # raise Exception(f'Unknown instruction encountered: {data["opr"]}')
         
         return constructor(**data)
