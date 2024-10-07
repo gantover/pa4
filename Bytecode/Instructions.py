@@ -298,22 +298,16 @@ class Invoke(Instruction):
         match(self.access):
             case InvokeType.Static | InvokeType.Dynamic:
                 # get the method form json
+                method = self.method.get_bytecode()
+                print(f"extracted method : {method}")
+                
 
 
                 # get the arguments list
                 args = self.method.args
                 args_length = len(args)
                 args_memory = stack[:args_length] 
-                print(f"current state of the stack : {stack}")
                 stack = stack[args_length:]
-
-                print(f"final memory : {args_memory}")
-                print(f"final stack: {args_memory}")
-
-
-                # for each element in that list, pop a value from the stack and load it into a new memory
-                # that will be injected into the new
-
 
                 pass
             case _:

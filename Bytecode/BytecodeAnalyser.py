@@ -145,7 +145,7 @@ def parseMethod(method, injected_memory = None):
     return JavaSimulator(instructions, State(pc, memory, *stack))
 
 
-def generate(param, memory: dict, index: int, intIterator):
+def generate(param, memory: dict, index: int):
     try:
         match(param := param["type"]["base"]):
             case "int":
