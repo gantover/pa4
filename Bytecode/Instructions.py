@@ -283,7 +283,9 @@ class Get(Instruction):
         if not self.static:
             ref, *stack = stack
         
-        if self.field.type == None:
+        if self.field.fieldName == "$assertionsDisabled":
+            value = False
+        elif self.field.type == None:
             l.warning("Field type in get is None")
         else:
             value = Unknown() # TODO:: get data from field

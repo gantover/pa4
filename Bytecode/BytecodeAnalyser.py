@@ -104,11 +104,16 @@ class JavaSimulator:
             sum += value
             
         if results[Result.Unknown] < 1:
-            for result, value in results.items():
-                if (result == Result.Unknown):
-                    continue
+            # for result, value in results.items():
+            #     if (result == Result.Unknown):
+            #         continue
                     
-                print(f'{result.value};{(value > 0) * 100}%')
+            print(f'{Result.AssertionError.value};{(results[Result.AssertionError]  > 0) * 100}%')
+            print(f'{Result.DivisionByZero.value};{(results[Result.DivisionByZero]  > 0) * 100}%')
+            print(f'{Result.NullPointer.value   };{(results[Result.NullPointer]     > 0) * 100}%')
+            print(f'{Result.OutOfBounds.value   };{(results[Result.OutOfBounds]     > 0) * 100}%')
+            print(f'{Result.Success.value       };{(results[Result.Success]         > 0) * 100}%')
+            print(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
 
 
 def parseMethod(method):
