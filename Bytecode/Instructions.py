@@ -1,6 +1,7 @@
 ﻿#!/usr/bin/env python3
 
 from pathlib import Path
+from parsing import MethodId
 from Datatypes import Data, Ref, dataFactory, Unknown
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
@@ -325,24 +326,11 @@ class Invoke(Instruction):
         # else:
         #     print("Could not find method")
 
-        #find the method somehow...
-        
-        # match self.access:
-        #     case InvokeType.Dynamic:
-                
-        #     case InvokeType.Static:
-                
-        #     case InvokeType.Virtual:
-        #         methodRef, *stack = stack
-                
-        #     case InvokeType.Special:
-        #         methodRef, *stack = stack
-                
-        #     case InvokeType.Interface:
-        #         methodRef, *stack = stack
-                
-        
-        if self.access not in {InvokeType.Dynamic, InvokeType.Static}:
+        # For simplicity we invoke all methods the same way.
+        # TODO: "Virtual" and "Interface" should be called on an object.
+        if self.access in [InvokeType.Static, InvokeType.Dynamic]:
+            return Result.Unknown
+        else:
             methodRef, *stack = stack
         
             if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
