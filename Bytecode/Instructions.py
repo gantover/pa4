@@ -302,7 +302,14 @@ class Invoke(Instruction):
 
                 # get the arguments list
                 args = self.method.args
-                print(f"required args by the invoke: {args}")
+                args_length = len(args)
+                args_memory = stack[:args_length] 
+                print(f"current state of the stack : {stack}")
+                stack = stack[args_length:]
+
+                print(f"final memory : {args_memory}")
+                print(f"final stack: {args_memory}")
+
 
                 # for each element in that list, pop a value from the stack and load it into a new memory
                 # that will be injected into the new
