@@ -2,6 +2,7 @@
 
 from enum import Enum
 from copy import deepcopy
+import parsing
 
 class State:
     pc: int
@@ -89,3 +90,13 @@ class MethodDefinition:
         self.name = name
         self.ref = ref
         self.returns = returns
+
+    def get_bytecode(self):
+        # Method path
+        unique_ref = f"{self.ref["name"].replace("/", ".")}.{self.name}:"
+        # Append parameters
+        unique_ref += f"({"".join([parsing.print_type(arg) for arg in self.args])})"
+        # Append return type
+        unique_ref += parsing.print_type(self.returns)
+
+        return parsing.MethodId.parse(unique_ref).load()
