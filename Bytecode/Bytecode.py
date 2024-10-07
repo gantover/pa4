@@ -2,7 +2,6 @@
 
 import sys, logging
 from parsing import MethodId
-from Instructions import staticVariableCollect
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -27,19 +26,7 @@ except Exception as e:
     print("parsing error:", e)
     
 try:
-    staticVariableCollect.collecting = True
     results = parsed.run(400)
     parsed.interpretResults(results)
-    staticVariableCollect.collecting = False
 except Exception as e:
     print("running error:", e)
-
-# Dynamic analysis (turned off by default to not output predictions)
-"""
-l.debug("--- DYNAMIC ---")
-try:
-    l.debug(f"static variables collected : {staticVariableCollect}")
-    print(BytecodeAnalyser.dynamicParseMethod(m, parsed))
-except Exception as e:
-    print("error:", e)
-"""
