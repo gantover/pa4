@@ -21,7 +21,7 @@ class Array(dict):
         return id(self)
     
     def __eq__(self, other):
-        if isinstance(other, Ref):
+        if isinstance(other, Array):
             return id(self) == id(other)
         return False
     
