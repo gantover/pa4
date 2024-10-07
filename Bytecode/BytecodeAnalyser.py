@@ -6,7 +6,7 @@ from typing import List as PyList
 from enum import Enum
 from Debug import l
 
-from Instructions import Instruction, instructionFactory, staticVariableCollect
+from Instructions import Instruction, instructionFactory
 from Datatypes import Unknown, Ref
 from State import State, Result
 from random import randint
@@ -116,7 +116,7 @@ class JavaSimulator:
             print(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
 
 
-def parseMethod(method):
+def parseMethod(method, injected_memory = None):
     instructions = []
     pc, memory, *stack = State(0, dict())
     
@@ -124,16 +124,19 @@ def parseMethod(method):
         # l.debug(f'Parsing instruction {instruction}')
         instructions.append(instructionFactory.parse(instruction))
     
-    for i, param in enumerate(method["params"]):
-        if param["type"].get("kind") == "array":
-            # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
-            # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
-            # arrayOfType = param["type"]["type"]["base"]
-            ref = Ref("Array")
-            memory[i] = ref
-            memory[ref] = Unknown()
-        else:
-            memory[i] = Unknown()
+    if injected_memory == None:
+        for i, param in enumerate(method["params"]):
+            if param["type"].get("kind") == "array":
+                # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
+                # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
+                # arrayOfType = param["type"]["type"]["base"]
+                ref = Ref("Array")
+                memory[i] = ref
+                memory[ref] = Unknown()
+            else:
+                memory[i] = Unknown()
+    else:
+        memory = injected_memory
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 

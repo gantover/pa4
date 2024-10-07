@@ -6,27 +6,6 @@ from State import State, BranchCondition, Result, FieldDefinition, MethodDefinit
 from Parsing import SubclassFactory
 from Debug import l
 
-class StaticVariableCollect(dict):
-    # will provide information to generate useful random input for dynamic analysis
-    # we only collect static varible during the static analysis phase
-    def __init__(self):
-        super().__init__()
-        self.collecting = True
-    def update(self, var):
-        if self.collecting == True:
-            if self.get(var.__class__.__name__) == None:
-                self[var.__class__.__name__] = set() 
-                self[var.__class__.__name__].add(var) 
-            else:
-                self[var.__class__.__name__].add(var) 
-    def prepare_integer(self):
-        ints = self.get("Integer")
-        int_min = min(ints)
-        int_max = max(ints)
-        gap = int_max = int_min
-        self.integer_range = []
-
-staticVariableCollect = StaticVariableCollect()
 
 class Instruction:
     name: str
@@ -44,7 +23,6 @@ class Push(Instruction):
         self.value = value["value"]
     
     def execute(self, pc, memory, *stack):
-        # staticVariableCollect.update(self.value) Breaks with None value
         return [State(pc, memory, self.value, *stack)]
 
 class Store(Instruction):
@@ -313,6 +291,20 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack):
         
+        match(self.access):
+            case "static":
+                # get the method form json
+
+
+                # get the arguments list
+
+                # for each element in that list, pop a value from the stack and load it into a new memory
+                # that will be injected into the new
+                pass
+            case _:
+                l.error(f"unhandled invoke access type : {self.access}")
+
+
         # return Result.Unknown
         
         # args = stack[:len(self.method.args)]
