@@ -10,9 +10,11 @@ l.basicConfig(level=logging.DEBUG)
 
 l.debug("read the method name")
 method = MethodId.parse(name)
+l.debug(f"found method from name : {method}")
 
 l.debug("looking up method")
 m = method.load()
+l.debug(f"method content : {m}")
 
 try:
     import BytecodeAnalyser

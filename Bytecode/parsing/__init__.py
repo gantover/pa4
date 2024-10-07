@@ -30,10 +30,12 @@ def print_params(params: tuple[JvmType]) -> str:
 def print_type(tpe: JvmType) -> str:
     INV_TYPE_LOOKUP: dict[JvmType, str] = {
         "boolean": "Z",
+        "bool": "Z",
         "int": "I",
         "char": "C",
         "int[]": "[I",  # ]
         "char[]": "[C",  # ]
+        None: "V"
     }
     return INV_TYPE_LOOKUP[tpe]
 
