@@ -9,8 +9,7 @@ from Debug import l
 from Instructions import Instruction, instructionFactory, staticVariableCollect
 from Datatypes import Unknown, Ref
 from State import State, Result
-from random import random, randint
-
+from random import randint
 
 
 class JavaSimulator:
@@ -40,7 +39,7 @@ class JavaSimulator:
                 state = self.frontier.pop()
                 instruction = self.instructions[state.pc]
                 
-                pc, memory, *stack = state
+                pc, memory, *stack = state.deepcopy
 
                 if debug:
                     l.debug(f"-----")
@@ -104,12 +103,12 @@ class JavaSimulator:
         for value in results.values():
             sum += value
             
-        if results[Result.Unknown] <= 1:
+        if results[Result.Unknown] < 1:
             for result, value in results.items():
                 if (result == Result.Unknown):
                     continue
                     
-                print(f'{result.value};{value/sum*100}%')
+                print(f'{result.value};{(value > 0) * 100}%')
 
 
 def parseMethod(method):

@@ -28,7 +28,7 @@ except Exception as e:
     
 try:
     staticVariableCollect.collecting = True
-    results = parsed.run(100)
+    results = parsed.run(400)
     parsed.interpretResults(results)
     staticVariableCollect.collecting = False
 except Exception as e:

@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 
 from pathlib import Path
-from Datatypes import Data, Ref, Unknown
+from Datatypes import Ref, Unknown, Array
 from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
@@ -37,7 +37,7 @@ class Instruction:
         raise Exception("BAD person, dont create an instance of an abstract base class")
 
 class Push(Instruction):
-    value: Data
+    value: int | bool | float
     
     def __init__(self, opr, value, offset):
         self.name = opr
@@ -163,6 +163,7 @@ class NewArray(Instruction):
     def __init__(self, opr, type, dim, offset):
         self.name = opr
         self.dimensions = dim
+        self.type = type
         # self.type = dataFactory.get(type)
         
         if (dim != 1): #TODO:: implement support for multi dimentional arrays
@@ -172,10 +173,9 @@ class NewArray(Instruction):
         # for i in range(self.dimensions):
         #     dimension_size, *stack = stack
         
-        ref = Ref("Array")
-        memory[ref] = length
+        array = Array(length, 0) #TODO:: implement default values per type
         
-        return [State(pc, memory, ref, *stack)]
+        return [State(pc, memory, array, *stack)]
     
 class Dup(Instruction):
     # words: int
@@ -196,24 +196,27 @@ class Array_Store(Instruction):
         self.name = opr
         # self.type = dataFactory.get(type)
     
-    def execute(self, pc, memory, value, index, ref: Ref, *stack):
+    def execute(self, pc, memory, value, index, array: Array, *stack):
         
-        if ref == None:
+        if array == None:
             return Result.NullPointer
         
         # TODO:: Improve bounds check
         # print(index.value)
+        array[index] = value
         
-        if isinstance(index, int):
-            # print("instance of int")
-            if index < 0:
-                return Result.OutOfBounds
-            if index >= memory[ref]:
-                return Result.OutOfBounds
+        lowerBound = index < 0
+        upperBound = index >= len(array)
         
-        memory[ref[index]] = value # TODO:: implement type safety
+        state = State(pc, memory, *stack)
         
-        return [State(pc, memory, *stack)]
+        if lowerBound is False and upperBound is False:
+            return state
+        
+        if lowerBound is True or upperBound is True:
+            return Result.OutOfBounds
+        
+        return [state, Result.OutOfBounds]
 
 class Array_Load(Instruction):
     # type:  classmethod
@@ -222,23 +225,27 @@ class Array_Load(Instruction):
         self.name = opr
         # self.type = dataFactory.get(type)
     
-    def execute(self, pc, memory, index, ref : Data, *stack):
+    def execute(self, pc, memory, index, array : Array, *stack):
         
-        l.debug(memory[ref])
+        l.debug(array)
         
-        if memory[ref] == None:
+        if array == None:
             return Result.NullPointer
         
-        if isinstance(index, int):
-            # print("instance of int")
-            if index < 0:
-                return Result.OutOfBounds
-            if index >= memory[ref[index]]:
-                return Result.OutOfBounds
+        value = array[index] #TODO:: type safety, failiure handling, is value known
         
-        value = memory.get(ref[index], Unknown()) #TODO:: type safety, failiure handling, is value known
+        state = State(pc, memory, value, *stack)
         
-        return [State(pc, memory, value, *stack)]
+        lowerBound = index < 0
+        upperBound = index >= len(array)
+        
+        if lowerBound is False and upperBound is False:
+            return state
+        
+        if lowerBound is True or upperBound is True:
+            return Result.OutOfBounds
+        
+        return [state, Result.OutOfBounds]
   
 class Return(Instruction):
     # type:  classmethod
@@ -254,12 +261,12 @@ class ArrayLength(Instruction):
     def __init__(self, opr, offset):
         self.name = opr
     
-    def execute(self, pc, memory, ref : Ref, *stack):
+    def execute(self, pc, memory, array : Array, *stack):
         
-        if ref == None:
+        if array == None:
             return Result.NullPointer
         
-        length = memory[ref]
+        length = len(array)
         
         return [State(pc, memory, length, *stack)]
 

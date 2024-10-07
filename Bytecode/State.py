@@ -1,12 +1,12 @@
 ﻿#!/usr/bin/env python3
 
-from Datatypes import Data, dataFactory
 from enum import Enum
+from copy import deepcopy
 
 class State:
     pc: int
-    memory: tuple[any, Data]
-    stack: list[Data]
+    memory: tuple[any]
+    stack: list[any]
     
     def __init__(self, pc, memory, *stack):
         self.stack = stack
@@ -30,6 +30,10 @@ class State:
     
     def __repr__(self):
         return f'<state {self.pc} {self.memory} {self.stack}>'
+    
+    @property
+    def deepcopy(self):
+        return deepcopy(self)
 
 class Result(Enum):
     RunsForever = "*"
@@ -70,10 +74,7 @@ class FieldDefinition:
     def __init__(self, name, type, **kwargs):
         self.className = kwargs["class"]
         self.fieldName = name
-        self.type = dataFactory.get(type)
-        
-        if self.type == None:
-            print(f"unknown type: {type}")
+        self.type = type
 
 class MethodDefinition:
     args : list[classmethod]
@@ -83,8 +84,8 @@ class MethodDefinition:
     returns: classmethod
     
     def __init__(self, args, is_interface, name, ref, returns, **kwargs):
-        self.args = [dataFactory.get(arg) for arg in args]
+        self.args = args
         self.is_interface = is_interface #kwargs.get("is_interface") or False
         self.name = name
         self.ref = ref
-        self.returns = dataFactory.get(returns)
+        self.returns = returns

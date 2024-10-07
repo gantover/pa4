@@ -1,118 +1,34 @@
 ﻿#!/usr/bin/env python3
 
-from Parsing import SubclassFactory
-
-class Data:
-    def __init__(self) -> None:
-        raise Exception("Data is abstract")
+class Array(dict):
+    length: any
+    default: any
     
-    def __repr__(self) -> str:
-        return f'<{self.__class__}>'
+    def __init__(self, length, default, **kwargs):
+        self.length = length
+        self.default = default
+        super(Array, self).__init__(**kwargs)
+
+    def __getitem__(self, key):
+        if key in self:
+            return super(Array, self).__getitem__(key)
+        return self.default
+    
+    def __len__(self):
+        return self.length
     
     def __hash__(self):
         return id(self)
     
     def __eq__(self, other):
-        if isinstance(other, Data):
+        if isinstance(other, Ref):
             return id(self) == id(other)
         return False
     
     def __ne__(self, other):
-        # Not strictly necessary, but to avoid having both x==y and x!=y
-        # True at the same time
         return not(self == other)
 
-class Byte(Data):
-    value: int
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Byte = {self.value}>'
-
-class BinaryOpMixin:
-    def __add__(self, other):
-        return self.__class__(self.value + other.value)
-
-    def __sub__(self, other):
-        return self.__class__(self.value - other.value)
-
-    def __mul__(self, other):
-        return self.__class__(self.value * other.value)
-
-    def __truediv__(self, other):
-        return self.__class__(self.value / other.value)
-        
-    def __floordiv__(self, other): 
-        return self.__class__(self.value // other.value)
-
-    def __mod__(self, other):
-        return self.__class__(self.value % other.value)
-
-class IntegerOpMixin(BinaryOpMixin):
-    def __truediv__(self, other):
-        return self.__floordiv__(other)
-
-    def __hash__(self):
-        return self.value
-
-
-class Short(Data, IntegerOpMixin):
-    value: int
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Short = {self.value}>'
-
-class Integer(Data, IntegerOpMixin):
-    value: int
-    
-    def __init__(self, value, **_):
-        self.value = value
-    
-    def __repr__(self) -> str:
-        return f'<Integer = {self.value}>'
-    
-class Long(Data, IntegerOpMixin):
-    value: int
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Long = {self.value}>'
-
-class Float(Data, BinaryOpMixin):
-    value: float
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Float = {self.value}>'
-
-class Double(Data, BinaryOpMixin):
-    value: float
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Double = {self.value}>'
-
-class Char(Data, BinaryOpMixin):
-    value: str
-    
-    def __init__(self, value, **_):
-        self.value = value
-        
-    def __repr__(self) -> str:
-        return f'<Char = {self.value}>'
-
-class Ref(Data):
+class Ref:
     refType: str
     
     def __getitem__(self, *key):
@@ -120,6 +36,20 @@ class Ref(Data):
     
     def __init__(self, refType):
         self.refType = refType
+    
+    def __repr__(self) -> str:
+        return f'<Ref 0x{id(self)}>'
+    
+    def __hash__(self):
+        return id(self)
+    
+    def __eq__(self, other):
+        if isinstance(other, Ref):
+            return id(self) == id(other)
+        return False
+    
+    def __ne__(self, other):
+        return not(self == other)
     
 class Unknown:
     def __add__(self, other): return Unknown()
@@ -155,8 +85,6 @@ class Unknown:
         return Unknown()
     
     def __ne__(self, other):
-        # Not strictly necessary, but to avoid having both x==y and x!=y
-        # True at the same time
         if other is None:
             return True
         if isinstance(other, Unknown):
@@ -165,8 +93,3 @@ class Unknown:
     
     def __repr__(self):
         return "<Unkown>"
-    
-dataFactory = SubclassFactory(Data, "type")
-dataFactory["int"] = Integer
-dataFactory["boolean"] = Byte
-dataFactory["array"] = Ref
