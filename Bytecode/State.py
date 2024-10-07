@@ -95,8 +95,14 @@ class MethodDefinition:
         # Method path
         unique_ref = f"{self.ref["name"].replace("/", ".")}.{self.name}:"
         # Append parameters
-        unique_ref += f"({"".join([parsing.print_type(arg) for arg in self.args])})"
+        unique_ref += f"({"".join([self.__get_valuetype(arg) for arg in self.args])})"
         # Append return type
-        unique_ref += parsing.print_type(self.returns)
-
+        unique_ref += self.__get_valuetype(self.returns)
+        print(unique_ref)
         return parsing.MethodId.parse(unique_ref).load()
+
+    @staticmethod
+    def __get_valuetype(val):
+        if isinstance(val, dict) and val.get("kind") == "array":
+            return parsing.print_type(f"{val["type"]}[]")
+        return parsing.print_type(val)
