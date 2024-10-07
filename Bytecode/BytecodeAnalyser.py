@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory, staticVariableCollect
-from Datatypes import Unknown, Ref
+from Datatypes import Unknown, Array
 from State import State, Result
 from random import randint
 
@@ -22,6 +22,7 @@ class JavaSimulator:
         self.instructions = instructions
         self.frontier = [initial_state]
         self.explored = {initial_state}
+        self.toVisit = {pc for pc in range(len(instructions))}
     
     def update(self, initial_state):
         self.frontier = [initial_state]
@@ -40,6 +41,9 @@ class JavaSimulator:
                 instruction = self.instructions[state.pc]
                 
                 pc, memory, *stack = state.deepcopy
+                
+                # if pc in self.toVisit:
+                self.toVisit.remove(pc)
 
                 if debug:
                     l.debug(f"-----")
@@ -87,8 +91,10 @@ class JavaSimulator:
             else:
                 break
         
-        if i + 1 != depth:
+        if i + 1 != depth and len(self.toVisit) == 0:
             return results
+        else:
+            return {Result.Unknown: 1}
             # if it fails and return None, this will be intercepted in the exception
 
     @staticmethod
@@ -129,9 +135,7 @@ def parseMethod(method):
             # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
             # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
             # arrayOfType = param["type"]["type"]["base"]
-            ref = Ref("Array")
-            memory[i] = ref
-            memory[ref] = Unknown()
+            memory[i] = Array(Unknown(), 0)
         else:
             memory[i] = Unknown()
 
@@ -159,7 +163,7 @@ def generate(param, memory: dict, index: int, intIterator):
             match(sup_param := param["type"]["kind"]):
                 case "array":
                     lenght = randint(1, 10)
-                    ref = Ref("Array")
+                    ref = Array(lenght, 0)
                     memory[index] = ref
                     memory[ref] = lenght
                     param = param["type"]

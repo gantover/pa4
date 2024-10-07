@@ -198,7 +198,7 @@ class Array_Store(Instruction):
     
     def execute(self, pc, memory, value, index, array: Array, *stack):
         
-        if array == None:
+        if array is None:
             return Result.NullPointer
         
         # TODO:: Improve bounds check
@@ -206,7 +206,7 @@ class Array_Store(Instruction):
         array[index] = value
         
         lowerBound = index < 0
-        upperBound = index >= len(array)
+        upperBound = index >= array.length
         
         state = State(pc, memory, *stack)
         
@@ -229,15 +229,19 @@ class Array_Load(Instruction):
         
         l.debug(array)
         
-        if array == None:
+        if array is None:
             return Result.NullPointer
         
         value = array[index] #TODO:: type safety, failiure handling, is value known
         
         state = State(pc, memory, value, *stack)
         
+        
+        # if not isinstance(len(array), (int)):
+        #     return [state, Result.OutOfBounds]
+        
         lowerBound = index < 0
-        upperBound = index >= len(array)
+        upperBound = index >= array.length
         
         if lowerBound is False and upperBound is False:
             return state
@@ -266,7 +270,7 @@ class ArrayLength(Instruction):
         if array == None:
             return Result.NullPointer
         
-        length = len(array)
+        length = array.length
         
         return [State(pc, memory, length, *stack)]
 
