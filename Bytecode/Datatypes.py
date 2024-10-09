@@ -1,5 +1,7 @@
 ﻿#!/usr/bin/env python3
 
+from State import BranchCondition
+
 class Array(dict):
     length: any
     default: any
@@ -80,12 +82,12 @@ class SignedUnknown:
         return hash(self.__key)
     
     def __eq__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             return self.__key == other.__key
         return False
     
     def __ne__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             return self.__key != other.__key
         return True
     
@@ -93,55 +95,55 @@ class SignedUnknown:
         return f"<Signed Unkown {self.positive * '+'}{self.zero * '0'}{self.negative * '-'}>"
     
     def __add__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive or other.positive
             z = self.zero and other.zero or self.positive and other.negative or self.negative and other.positive
             n = self.negative or other.negative
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
         
     def __sub__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive or other.negative
             z = self.zero and other.zero or self.positive and other.positive or self.negative and other.negative
             n = self.negative or other.positive
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __mul__(self, other): 
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive and other.positive or self.positive and self.positive
             z = self.zero or other.zero
             n = self.negative and other.positive or self.positive and other.negative
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __truediv__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive and other.positive or self.positive and self.positive
             z = False
             n = self.negative and other.positive or self.positive and other.negative
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __floordiv__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive and other.positive or self.positive and self.positive
             z = False
             n = self.negative and other.positive or self.positive and other.negative
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __mod__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = other.positive and not other.zero
             z = not other.zero
             n = other.negative and not other.zero
-            return SignedUnkown(p, z, n)
+            return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __lt__(self, other): 
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
             if self.min == 0 and other.max == 0:
@@ -152,7 +154,7 @@ class SignedUnknown:
         return NotImplemented
     
     def __gt__(self, other): 
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
             if self.max == 0 and other.min == 0:
@@ -163,7 +165,7 @@ class SignedUnknown:
         return NotImplemented
     
     def __le__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
             if self.max == 0 and other.min == 0:
@@ -174,7 +176,7 @@ class SignedUnknown:
         return NotImplemented
     
     def __ge__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
             if self.min == 0 and other.max == 0:
@@ -185,7 +187,7 @@ class SignedUnknown:
         return NotImplemented
     
     def __eq__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
             n = self.negative and other.negative
@@ -199,7 +201,7 @@ class SignedUnknown:
         return NotImplemented
         
     def __ne__(self, other):
-        if isinstance(other, SignedUnkown):
+        if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
             n = self.negative and other.negative
@@ -262,3 +264,21 @@ class Unknown:
     
     def __repr__(self):
         return "<Unkown>"
+    
+    
+    class Lattice:
+        def __init__(self):
+            pass
+        
+        
+    
+    # class SmartUnkownInt:
+        
+    #     dict = {(x, y): 'gt', (y, x): 'le'}
+        
+        
+    #     def __init__(self):
+    #         pass
+        
+    #     def Compare(self):
+    #         pass

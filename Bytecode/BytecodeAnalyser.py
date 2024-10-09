@@ -42,8 +42,8 @@ class JavaSimulator:
                 
                 pc, memory, *stack = state.deepcopy
                 
-                # if pc in self.toVisit:
-                self.toVisit.remove(pc)
+                if pc in self.toVisit:
+                    self.toVisit.remove(pc)
 
                 if debug:
                     l.debug(f"-----")
@@ -91,10 +91,14 @@ class JavaSimulator:
             else:
                 break
         
-        if i + 1 != depth and len(self.toVisit) == 0:
-            return results
-        else:
+        if i + 1 == depth:
+            l.debug("reached max depth")
             return {Result.Unknown: 1}
+        if len(self.toVisit) > 0: #TODO
+            l.debug(f"Didn't visit the instructions {self.toVisit}")
+            return {Result.Unknown: 1}
+        
+        return results
             # if it fails and return None, this will be intercepted in the exception
 
     @staticmethod
@@ -126,8 +130,9 @@ def parseMethod(method, injected_memory = None):
     instructions = []
     pc, memory, *stack = State(0, dict())
     
-    for instruction in method["code"]["bytecode"]:
+    for counter, instruction in enumerate(method["code"]["bytecode"]):
         # l.debug(f'Parsing instruction {instruction}')
+        l.debug(f'parsing instruction {counter}')
         instructions.append(instructionFactory.parse(instruction))
     
     if injected_memory == None:
@@ -136,7 +141,7 @@ def parseMethod(method, injected_memory = None):
                 # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
                 # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
                 # arrayOfType = param["type"]["type"]["base"]
-                memory[i] = Array(Unknown(), 0)
+                memory[i] = Array(Unknown(), Unknown())
             else:
                 memory[i] = Unknown()
     else:

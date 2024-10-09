@@ -22,7 +22,7 @@ class SubclassFactory(dict):
             # this fills in the dictionnary of "type" -> actual DataType
     
     def parse(self, data: dict):
-        if data == None:
+        if data is None:
             l.debug(f'None value passed into subclass factory')
             return None
         

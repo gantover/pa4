@@ -20,7 +20,7 @@ class Push(Instruction):
     
     def __init__(self, opr, value, offset):
         self.name = opr
-        self.value = value["value"]
+        self.value = value and value["value"]
     
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, self.value, *stack)]
@@ -415,7 +415,7 @@ class Binary(Instruction):
         #     l.warning("type None detected on binary operation")
         #     return Result.Unknown
         
-        if self.operant == BinaryOperation.Division and val2 == 0 or isinstance(val2, Unknown):
+        if self.operant == BinaryOperation.Division and (val2 == 0 or isinstance(val2, Unknown)):
             results.append(Result.DivisionByZero)
         
         op = {
