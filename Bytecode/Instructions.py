@@ -296,14 +296,19 @@ class Invoke(Instruction):
     def execute(self, pc, memory, *stack):
         
         match(self.access):
-            case "static":
+            case InvokeType.Static | InvokeType.Dynamic:
                 # get the method form json
+                method = self.method.get_bytecode()
+                print(f"extracted method : {method}")
+                
 
 
                 # get the arguments list
+                args = self.method.args
+                args_length = len(args)
+                args_memory = stack[:args_length] 
+                stack = stack[args_length:]
 
-                # for each element in that list, pop a value from the stack and load it into a new memory
-                # that will be injected into the new
                 pass
             case _:
                 l.error(f"unhandled invoke access type : {self.access}")
