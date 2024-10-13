@@ -7,13 +7,19 @@ for_science: true
 
 # Underneath here add the tools which you want to run
 tools:
-  test: 
+  # test: 
+  #   technologies:
+  #     - python
+
+  #   executable: ../pa4/main.py
+
+  bytecoder: 
     technologies:
-      - tree-sitter
       - bytecode
+      - static
       - python
 
-    executable: ../pa4/main.py
+    executable: ../pa4/Bytecode/Bytecode.py
 
 # Describe your machine here (for research purposes) 
 machine:
