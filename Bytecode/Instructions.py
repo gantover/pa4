@@ -1,8 +1,8 @@
 ﻿#!/usr/bin/env python3
 
 from pathlib import Path
-from Datatypes import Ref, Unknown, Array
-from State import State, BranchCondition, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
+from Datatypes import Ref, Unknown, Array, Keystone
+from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
 
@@ -52,86 +52,96 @@ class Load(Instruction):
         return [State(pc, memory, memory[self.index], *stack)]
 
 class If(Instruction):
-    condition: BranchCondition
+    condition: Comparison
     target: int
     
     def __init__(self, opr, condition, target, offset):
         self.name = opr
-        self.condition = BranchCondition(condition)
+        self.condition = Comparison(condition)
         self.target = target
     
     def __repr__(self): return f'If {self.condition} jump to {self.target}'
     
     def execute(self, pc, memory, val1, val2, *stack):
-        jump = State(self.target, memory, *stack)
+        
+        result = {
+            Comparison.GreaterThan: lambda: val2 > val1,
+            Comparison.GreaterEqual: lambda: val2 >= val1,
+            Comparison.NotEqual: lambda: val2 != val1,
+            Comparison.Equal: lambda: val2 == val1,
+            Comparison.LessThan: lambda: val2 < val1,
+            Comparison.LessEqual: lambda: val2 <= val1
+        }[self.condition]()
+        
+        l.debug(f"If: {val2} {self.condition} {val1} is {result}")
+        
+        if isinstance(val2, Keystone) and isinstance(val1, int):
+            val2.update(val1, self.condition)
+        elif isinstance(val2, int) and isinstance(val1, Keystone):
+            val1.update(val2, self.condition.reversed)
+        
+        jump = State(self.target, memory, *stack).deepcopy
+        
+        if isinstance(val2, Keystone) and isinstance(val1, int):
+            val2.update(val1, self.condition.inverse)
+        elif isinstance(val2, int) and isinstance(val1, Keystone):
+            val1.update(val2, self.condition.reversed.inverse)
+        
         stay = State(pc, memory, *stack)
         
-        case = {
-            BranchCondition.GreaterThan: lambda: val2> val1,
-            BranchCondition.GreaterEqual: lambda: val2>= val1,
-            BranchCondition.NotEqual: lambda: val2 != val1,
-            BranchCondition.Equal: lambda: val2 == val1,
-            BranchCondition.LessThan: lambda: val2 < val1,
-            BranchCondition.LessEqual: lambda: val2 <= val1
-        }[self.condition]
-        
-        l.debug(f"If: {val2} {self.condition} {val1}")
-        
-        result = case()
-        
-        if isinstance(result, Unknown):
-            l.debug("Cannot evaluate if early")
-        elif result:
-            l.debug("jumping")
-            return [jump]
-        else:
-            l.debug("staying")
-            return [stay]
-        
-        # TODO:: Implement branching chance
-        
-        return [stay, jump]
+        match result:
+            case True:
+                l.debug("jumping")
+                return [jump]
+            case False:
+                l.debug("staying")
+                return [stay]
+            case _:
+                l.debug("Cannot evaluate if early")
+                return [stay, jump]
 
-class IfZ(Instruction): # TODO:: rename, something like "if compare zero"
-    condition: BranchCondition
+class IfZ(Instruction):
+    condition: Comparison
     target: int
     
     def __init__(self, opr, condition, target, offset):
         self.name = opr
-        self.condition = BranchCondition(condition)
+        self.condition = Comparison(condition)
         self.target = target
     
     def execute(self, pc, memory, val, *stack):
-        l.debug(f"{val} {self.condition} 0 ?")
-
-        jump = State(self.target, memory, *stack)
+        
+        result = {
+            Comparison.GreaterThan: lambda: val > 0,
+            Comparison.GreaterEqual: lambda: val >= 0,
+            Comparison.NotEqual: lambda: val != 0,
+            Comparison.Equal: lambda: val == 0,
+            Comparison.LessThan: lambda: val < 0,
+            Comparison.LessEqual: lambda: val <= 0
+        }[self.condition]()
+        
+        l.debug(f"If: {val} {self.condition} {0} is {result}")
+        
+        if isinstance(val, Keystone):
+            val.update(0, self.condition)
+        
+        jump = State(self.target, memory, *stack).deepcopy
+        
+        if isinstance(val, Keystone):
+            val.update(0, self.condition.inverse)
+        
         stay = State(pc, memory, *stack)
         
-        case = {
-            BranchCondition.GreaterThan: lambda: val > 0,
-            BranchCondition.GreaterEqual: lambda: val >= 0,
-            BranchCondition.NotEqual: lambda: val != 0,
-            BranchCondition.Equal: lambda: val == 0,
-            BranchCondition.LessThan: lambda: val < 0,
-            BranchCondition.LessEqual: lambda: val <= 0,
-        }[self.condition]
-        
-        l.debug(f"If: {val} {self.condition} 0 ")
-        
-        result = case()
-        
-        if isinstance(result, Unknown):
-            l.debug("Cannot evaluate if early")
-        elif result:
-            l.debug("jumping")
-            return [jump]
-        else:
-            l.debug("staying")
-            return [stay]
-        
-        # TODO:: Implement branching chance
-        
-        return [stay, jump]
+        match result:
+            case True:
+                l.debug("jumping")
+                return [jump]
+            case False:
+                l.debug("staying")
+                return [stay]
+            case _:
+                l.debug("Cannot evaluate if early")
+                return [stay, jump]
 
     
 class NewArray(Instruction):
@@ -151,7 +161,7 @@ class NewArray(Instruction):
         # for i in range(self.dimensions):
         #     dimension_size, *stack = stack
         
-        array = Array(length, 0) #TODO:: implement default values per type
+        array = Array(length, lambda: 0) #TODO:: implement default values per type
         
         return [State(pc, memory, array, *stack)]
     
@@ -299,7 +309,7 @@ class Invoke(Instruction):
             case InvokeType.Static | InvokeType.Dynamic:
                 # get the method form json
                 method = self.method.get_bytecode()
-                print(f"extracted method : {method}")
+                l.debug(f"extracted method : {method}")
                 
 
 
@@ -397,8 +407,8 @@ class GoTo(Instruction):
     
     def execute(self, pc, memory, *stack):
         
-        if self.target <= pc:
-            return Result.RunsForever
+        # if self.target <= pc:
+        #     return Result.RunsForever
         
         return [State(self.target, memory, *stack)]
 
@@ -415,12 +425,7 @@ class Binary(Instruction):
     def execute(self, pc, memory, val2, val1, *stack):
         results = []
         
-        # val2, val1 are the two top values on the stack
-        # if self.type == None:
-        #     l.warning("type None detected on binary operation")
-        #     return Result.Unknown
-        
-        if self.operant == BinaryOperation.Division and (val2 == 0 or isinstance(val2, Unknown)):
+        if self.operant == BinaryOperation.Division and val2 == 0:
             results.append(Result.DivisionByZero)
         
         op = {
@@ -433,6 +438,10 @@ class Binary(Instruction):
         
         try:
             results.append(State(pc, memory, op(), *stack))
+        except TypeError as e:
+            print(f"Implement Keystone {self.operant.name} you lazy son of a sun, {val1} {val2}")
+            l.debug(f'Exception caught in binary: {e}')
+            return Result.Unknown
         except Exception as e:
             l.debug(f'Exception caught in binary: {e}')
 
@@ -450,8 +459,8 @@ class Cast(Instruction):
         # self.toType = dataFactory.get(to)
     
     def execute(self, pc, memory, head, *stack):
-        raise NotImplementedError() #TODO:: fix
+        # raise NotImplementedError() #TODO:: fix
         
-        return [State(pc, memory, self.toType(head), *stack)]
+        return [State(pc, memory, head, *stack)] # TODO:: ensure cast is valid
     
 instructionFactory = SubclassFactory(Instruction, "opr")

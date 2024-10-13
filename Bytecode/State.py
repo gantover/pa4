@@ -45,13 +45,51 @@ class Result(Enum):
     Success = "ok"
     Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
     
-class BranchCondition(Enum):
+class Comparison(Enum):
     GreaterThan = "gt"
     GreaterEqual = "ge"
     NotEqual = "ne"
     Equal = "eq"
     LessThan = "lt"
     LessEqual = "le"
+    Incomparable = "na"
+    
+    @property
+    def inverse(self):
+        return {
+            Comparison.GreaterThan: Comparison.LessEqual,
+            Comparison.GreaterEqual: Comparison.LessThan,
+            Comparison.LessThan: Comparison.GreaterEqual,
+            Comparison.LessEqual: Comparison.GreaterThan,
+            Comparison.NotEqual: Comparison.Equal,
+            Comparison.Equal: Comparison.NotEqual,
+            Comparison.Incomparable: Comparison.Incomparable
+        }[self]
+        
+    @property
+    def reversed(self):
+        return {
+            Comparison.GreaterThan: Comparison.LessThan,
+            Comparison.GreaterEqual: Comparison.LessEqual,
+            Comparison.LessThan: Comparison.GreaterThan,
+            Comparison.LessEqual: Comparison.GreaterEqual,
+            Comparison.NotEqual: Comparison.NotEqual,
+            Comparison.Equal: Comparison.Equal,
+            Comparison.Incomparable: Comparison.Incomparable
+        }[self]
+        
+    # TODO: let Comparison compare values directly
+    # def compare(self, left, rigth):
+    #     return {
+    #         Comparison.GreaterThan: lambda: left > 0,
+    #         Comparison.GreaterEqual: lambda: left >= 0,
+    #         Comparison.NotEqual: lambda: left != 0,
+    #         Comparison.Equal: lambda: left == 0,
+    #         Comparison.LessThan: lambda: left < 0,
+    #         Comparison.LessEqual: lambda: left <= 0,
+    #         Comparison.Incomparable: Comparison.Incomparable
+    #     }[self]()
+        
     
 class InvokeType(Enum):
     Special = "special"

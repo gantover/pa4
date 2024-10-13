@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Instruction, instructionFactory
-from Datatypes import Unknown, Array
+from Datatypes import Unknown, Array, Keystone
 from State import State, Result
 from random import randint
 
@@ -79,7 +79,9 @@ class JavaSimulator:
                 for r in result:
                     if isinstance(r, Result):
                         results[r] += 1
-                    elif r not in self.explored:
+                    elif r in self.explored:
+                        results[Result.RunsForever] += 1
+                    else:
                         self.frontier.append(r)
                         self.explored.add(r)
                         # if the same exact state is added twice to explored
@@ -94,9 +96,9 @@ class JavaSimulator:
         if i + 1 == depth:
             l.debug("reached max depth")
             return {Result.Unknown: 1}
-        if len(self.toVisit) > 0: #TODO
-            l.debug(f"Didn't visit the instructions {self.toVisit}")
-            return {Result.Unknown: 1}
+        # if len(self.toVisit) > 0: #TODO
+        #     l.debug(f"Didn't visit the instructions {self.toVisit}")
+        #     return {Result.Unknown: 1}
         
         return results
             # if it fails and return None, this will be intercepted in the exception
@@ -141,9 +143,9 @@ def parseMethod(method, injected_memory = None):
                 # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
                 # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
                 # arrayOfType = param["type"]["type"]["base"]
-                memory[i] = Array(Unknown(), Unknown())
+                memory[i] = Array(Keystone(), lambda: Keystone())
             else:
-                memory[i] = Unknown()
+                memory[i] = Keystone()
     else:
         memory = injected_memory
 
