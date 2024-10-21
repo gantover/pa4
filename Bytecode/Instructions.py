@@ -305,24 +305,45 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack):
         
+        from BytecodeAnalyser import parseMethod
         match(self.access):
             case InvokeType.Static | InvokeType.Dynamic:
                 # get the method form json
-                method = self.method.get_bytecode()
-                l.debug(f"extracted method : {method}")
-                
-
+                m = self.method.get_bytecode()
 
                 # get the arguments list
                 args = self.method.args
                 args_length = len(args)
-                args_memory = stack[:args_length] 
+                args_memory_list = stack[:args_length] 
+                args_memory = dict() 
+                for i in range(args_length):
+                    args_memory[i] = args_memory_list[i]
+
                 stack = stack[args_length:]
 
-                pass
+                parsed = parseMethod(m, args_memory)
+                l.debug("running invoke function")
+                results = parsed.run(depth=400, debug=True)
+                # we unwrap the results to have branches
+                # we swap success result with the new stack
+                return_values = []
+                for r in results.keys():
+                    if r != Result.Success:
+                        return_values.append(r)
+                    elif r == Result.Success:
+                        for i in range(results[r]):
+                            try:
+                                _,_, *invoke_stack = results.success_states[i]
+                                # TODO check if all values are made private with copies instead of references
+                                return_values.append(State(pc, memory.deepcopy, invoke_stack.pop(), *stack))
+                            except Exception as e:
+                                l.error(f"failed to swap success result with the new stack:\n {e}")
+                    else:
+                        l.error("Unexpected result from invoke run")
+                l.debug(f"!! Return values from invoke !!: {return_values}")
+                return return_values
             case _:
                 l.error(f"unhandled invoke access type : {self.access}")
-
 
         # return Result.Unknown
         

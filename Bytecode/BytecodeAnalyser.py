@@ -11,6 +11,10 @@ from Datatypes import Unknown, Array, Keystone
 from State import State, Result
 from random import randint
 
+class Results(dict):
+    def __init__(self):
+        super(Results, self).__init__()
+        self.success_states = [] 
 
 class JavaSimulator:
     instructions: list[Instruction]
@@ -28,8 +32,8 @@ class JavaSimulator:
         self.frontier = [initial_state]
         self.explored = {initial_state}
     
-    def run(self, depth=100, debug=True) -> dict | None:
-        results = dict()
+    def run(self, depth=100, debug=True) -> Results | None:
+        results = Results()
         
         for result in Result:
             results.setdefault(result, 0)
@@ -62,6 +66,7 @@ class JavaSimulator:
                     result = Result.Unknown
                     
                 
+                # if we don't have a list, make it a list
                 if isinstance(result, Result) or isinstance(result, State):
                     result = [result]
                 
@@ -80,6 +85,8 @@ class JavaSimulator:
                 for r in result:
                     if isinstance(r, Result):
                         results[r] += 1
+                        if r == Result.Success:
+                            results.success_states.append(state.deepcopy)
                     elif r in self.explored:
                         results[Result.RunsForever] += 1
                     else:
@@ -123,6 +130,7 @@ def parseMethod(method, injected_memory = None):
     for counter, instruction in enumerate(method["code"]["bytecode"]):
         # l.debug(f'Parsing instruction {instruction}')
         l.debug(f'parsing instruction {counter}')
+        l.debug(f"treating {instruction}")
         instructions.append(instructionFactory.parse(instruction))
     
     if injected_memory == None:
