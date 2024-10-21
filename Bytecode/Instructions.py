@@ -341,8 +341,10 @@ class Invoke(Instruction):
                         for i in range(value):
                             try:
                                 returnValue = results.returnValues[i]
-                                # TODO check if all values are made private with copies instead of references
-                                return_values.append(State(pc, memory, returnValue, *stack).deepcopy)
+                                if returnValue != None:
+                                    return_values.append(State(pc, memory, returnValue, *stack).deepcopy)
+                                else:
+                                    return_values.append(State(pc, memory, *stack).deepcopy)
                             except Exception as e:
                                 l.error(f"failed to swap success result with the new stack:\n {e}")
                     else:
