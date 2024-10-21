@@ -346,50 +346,18 @@ class Invoke(Instruction):
                     
                 # l.debug(f"!! Return values from invoke !!: {return_values}")
                 return return_values
+            case InvokeType.Interface | InvokeType.Virtual:
+                # TODO: Implement for classes
+                pass
             case _:
                 l.error(f"unhandled invoke access type : {self.access}")
 
-        # return Result.Unknown
-        
-        # args = stack[:len(self.method.args)]
-        # stack = stack[len(self.method.args):]
-        # classfile = (Path("decompiled") / self.name).with_suffix(
-        #     ".json"
-        # )
+        methodRef, *stack = stack
+    
+        if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
+            return [State(pc, memory, *stack)]
 
-        # with open(classfile) as f:
-        #     l.debug("read decompiled classfile %s", classfile)
-        #     classfile = json.load(f)
-
-        # l.debug("looking up method")
-        # # Lookup method
-        # for m in classfile["methods"]:
-        #     if (
-        #         m["name"] == i["method_name"]
-        #         and len(i["params"]) == len(m["params"])
-        #         and all(
-        #             TYPE_LOOKUP[tn] == t["type"]["base"]
-        #             for tn, t in zip(i["params"], m["params"])
-        #         )
-        #     ):
-        #         break
-        # else:
-        #     print("Could not find method")
-
-        # For simplicity we invoke all methods the same way.
-        # TODO: "Virtual" and "Interface" should be called on an object.
-        if self.access in [InvokeType.Static, InvokeType.Dynamic]:
-            return Result.Unknown
-        else:
-            methodRef, *stack = stack
-        
-            if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
-                return [State(pc, memory, *stack)]
-        
-        return Result.Unknown # TODO::
-        print("Invoking is illegal and you should feel bad <3")
-        
-        return [State(pc, memory, *stack)]
+        return Result.Unknown # Some parts of invoke not yet implemented
         
 class Throw(Instruction):
     def __init__(self, opr, offset):
