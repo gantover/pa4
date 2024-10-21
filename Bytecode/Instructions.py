@@ -305,7 +305,7 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack):
         
-        from BytecodeAnalyser import parseMethod, Results
+        from BytecodeAnalyser import parseMethod
         match(self.access):
             case InvokeType.Static | InvokeType.Dynamic:
                 # get the method form json
@@ -314,7 +314,11 @@ class Invoke(Instruction):
                 # get the arguments list
                 args = self.method.args
                 args_length = len(args)
-                args_memory = stack[:args_length] 
+                args_memory_list = stack[:args_length] 
+                args_memory = dict() 
+                for i in range(args_length):
+                    args_memory[i] = args_memory_list[i]
+
                 stack = stack[args_length:]
 
                 parsed = parseMethod(m, args_memory)
@@ -336,7 +340,8 @@ class Invoke(Instruction):
                                 l.error(f"failed to swap success result with the new stack:\n {e}")
                     else:
                         l.error("Unexpected result from invoke run")
-                    return return_values
+                l.debug(f"!! Return values from invoke !!: {return_values}")
+                return return_values
             case _:
                 l.error(f"unhandled invoke access type : {self.access}")
 
