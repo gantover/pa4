@@ -323,7 +323,7 @@ class Invoke(Instruction):
 
                 parsed = parseMethod(m, args_memory)
                 l.debug("running invoke function")
-                results = parsed.run(debug=True)
+                results = parsed.run(depth=400, debug=True)
                 # we unwrap the results to have branches
                 # we swap success result with the new stack
                 return_values = []

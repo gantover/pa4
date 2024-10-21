@@ -84,6 +84,8 @@ class JavaSimulator:
                 for r in result:
                     if isinstance(r, Result):
                         results[r] += 1
+                        if r == Result.Success:
+                            results.success_states.append(state.deepcopy)
                     elif r in self.explored:
                         results[Result.RunsForever] += 1
                     else:
