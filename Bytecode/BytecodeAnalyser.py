@@ -74,7 +74,8 @@ class JavaSimulator:
                 #         results[result] += 1
                 # else:
                     # there could be multiple branch states
-                    # for instance if statement returns two states
+                    # for instance if statement returns two states 
+                    
                     
                 for r in result:
                     if isinstance(r, Result):
@@ -95,7 +96,7 @@ class JavaSimulator:
         
         if i + 1 == depth:
             l.debug("reached max depth")
-            return {Result.Unknown: 1}
+            results[Result.Unknown] += 1
         # if len(self.toVisit) > 0: #TODO
         #     l.debug(f"Didn't visit the instructions {self.toVisit}")
         #     return {Result.Unknown: 1}
@@ -105,27 +106,14 @@ class JavaSimulator:
 
     @staticmethod
     def interpretResults(results):
-        # sum is used to weight the probabilites of each result
-        sum = -results[Result.Unknown]
-            
-        # for key, value in results.items():
-        #     if value > 0:
-        #         results[key] = 1
-            
-        for value in results.values():
-            sum += value
-            
-        if results[Result.Unknown] < 1:
-            # for result, value in results.items():
-            #     if (result == Result.Unknown):
-            #         continue
+        printFunction = l.debug if results[Result.Unknown] != 0 else print
                     
-            print(f'{Result.AssertionError.value};{(results[Result.AssertionError]  > 0) * 100}%')
-            print(f'{Result.DivisionByZero.value};{(results[Result.DivisionByZero]  > 0) * 100}%')
-            print(f'{Result.NullPointer.value   };{(results[Result.NullPointer]     > 0) * 100}%')
-            print(f'{Result.OutOfBounds.value   };{(results[Result.OutOfBounds]     > 0) * 100}%')
-            print(f'{Result.Success.value       };{(results[Result.Success]         > 0) * 100}%')
-            print(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
+        printFunction(f'{Result.AssertionError.value};{(results[Result.AssertionError]  > 0) * 100}%')
+        printFunction(f'{Result.DivisionByZero.value};{(results[Result.DivisionByZero]  > 0) * 100}%')
+        printFunction(f'{Result.NullPointer.value   };{(results[Result.NullPointer]     > 0) * 100}%')
+        printFunction(f'{Result.OutOfBounds.value   };{(results[Result.OutOfBounds]     > 0) * 100}%')
+        printFunction(f'{Result.Success.value       };{(results[Result.Success]         > 0) * 100}%')
+        printFunction(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
 
 
 def parseMethod(method, injected_memory = None):

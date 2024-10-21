@@ -475,29 +475,33 @@ class Keystone:
     def __sub__(self, other): return self + -other
     def __rsub__(self, other): return -self + other
     
-    # def __floordiv__(self, other):
-    #     if id(self) == id(other):
-    #         return 1
+    def __floordiv__(self, other):
+        if id(self) == id(other):
+            return 1
         
-    #     o_min, value, o_max = self.duck(other)
+        return Keystone() #TODO:: Implement
         
-    #     if other == 0 is False:
-    #         v = self.value // other.value
-    #     else:
-    #         v = NAN
+        o_min, value, o_max = self.duck(other)
+        
+        if other == 0 is False:
+            v = self.value // other.value
+        else:
+            v = NAN
 
-    #     vals = self.max//o_max, self.min//o_max, self.max//o_min, self.min//o_min
+        vals = self.max//o_max, self.min//o_max, self.max//o_min, self.min//o_min
         
-    #     gt = max(vals) == INFINITY
-    #     lt = min(vals) == -INFINITY
+        gt = max(vals) == INFINITY
+        lt = min(vals) == -INFINITY
         
-    #     result = Keystone(v, lt, not (gt or lt), gt)
+        result = Keystone(v, lt, not (gt or lt), gt)
         
-    #     print({f'{self} // {other} == {result}'})
+        print({f'{self} // {other} == {result}'})
         
-    #     return result
+        return result
 
     def __rfloordiv__(self, other):
+        return Keystone() #TODO:: Implement
+    
         if not isinstance(other, (int, float)):
             print(f"Cant divide for type {type(other)}")
             return NotImplemented
@@ -508,10 +512,11 @@ class Keystone:
         
         print(f'{other} // {self} produces: {values}')
         
-        return Keystone()
+    def __mod__(self, other):
+        return Keystone() # TODO:: Implement
         
-        
-        
+    def __mul__(self, other):
+        return Keystone() # TODO:: Implement
         
         
         
@@ -608,3 +613,138 @@ class intRange:
             
         if self.lb - 1 <= ub and lb - 1 <= self.ub:
             return intRange(min(self.lb, lb), max(self.ub, ub))
+
+class Identity:
+    def __hash__(self):
+        return hash(id(self))
+    
+    def __repr__(self):
+        return f'Identity {hash(self) % 1000}'
+    
+    
+    
+class linearUnknown:
+    def __init__(self, a, b, original = None):
+        self.a = a
+        self.b = b
+        self.original = original if original is not None else Identity()
+    
+    def __add__(self, other):
+        if isinstance(other, (int, float)):
+            return linearUnknown(self.a, self.b + other, self.original)
+        elif issubclass(other, linearUnknown) and self.original == other.original:
+            return linearUnknown(self.a + other.a, self.b + other.b, self.original)
+            
+        return NotImplemented
+    
+    def __radd__(self, other): return self + other
+    def __sub__(self, other): return self + -other
+    def __rsub__(self, other): return -self + other
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return linearUnknown(self.a * other, self.b * other, self.original)
+        
+        return NotImplemented
+    
+    def __rmul__(self, other): return self * other
+    
+    def __floordiv__(self, other):
+        return NotImplemented
+        
+        if isinstance(other, (int,float)):
+            return linearUnknown(self.a / other, self.b / other, self.original)
+        
+        
+    def __mod__(self, other):
+        if isinstance(other, (int,float)):
+            
+            if self.a % other == 0:
+                return self.b % other
+            
+        return NotImplemented
+    
+    
+        # val = (self.a * input + self.b) % 
+        
+        # return linearUnknown(self.a / other, self.b / other, self.original)
+
+from dataclasses import dataclass, field, asdict
+from math import lcm, floor
+from fractions import Fraction
+
+@dataclass
+class divisibleLinearUnkown:
+    base: Identity = field(default_factory=Identity)
+    slope: Fraction = 1
+    offset: Fraction = 0
+    steps: list[Fraction] = field(default_factory = lambda: [Fraction(1)])
+    
+    def __post_init__(self):
+        self.slope = Fraction(self.slope)
+        self.offset = Fraction(self.offset)
+        
+    def extract(self, value):
+        if isinstance(value, (int, float)):
+            return True, 0, value, [1], 1
+        
+        if isinstance(value, divisibleLinearUnkown):
+            if self.base == value.base or self.slope == 0:
+                return value.base, value.slope, value.offset, value.steps, value.lcd
+            elif value.slope == 0:
+                return self.base, value.slope, value.offset, value.steps, value.lcd
+        
+        raise Exception(f"Cannot extract type {type(value)} for operation with divisibleLinearUnkown")
+    
+    def __iter__(self):
+        yield from asdict(self).values()
+    
+    def __neg__(self):
+        return divisibleLinearUnkown(self.base, -self.slope, -self.offset, -self.steps) #TODO:: should step be negative??
+    
+    def __add__(self, other):
+        # base, slope, offset, step = self.extract(other)
+        
+        # if base is not None:
+        return divisibleLinearUnkown(self.base, self.slope, self.offset + other, self.steps)
+        
+        # return NotImplemented
+    
+    def __radd__(self, other): return self + other
+    def __sub__(self, other): return self + -other
+    def __rsub__(self, other): return -self + other
+    
+    def __mul__(self, other):
+        # base, slope, offset, steps, lcd = self.extract(other)
+        
+        # if slope != 0 and self.slope != 0:
+        #     raise Exception("Cannot multiply two divisibleLinearUnkown with each other")
+        
+        # if slope == 0:
+        # steps = 
+        # elif self.slope == 0:
+        #     steps = [step * self.offset for step in steps]
+        
+        # if base is not None:
+        return divisibleLinearUnkown(
+            base= self.base, 
+            slope= self.slope * other, # offset + self.offset * slope, 
+            offset= self.offset * other, #offset,
+            steps= [step * other for step in self.steps])
+
+    def __floordiv__(self, other):
+        return divisibleLinearUnkown(
+            base= self.base, 
+            slope= self.slope / other, # offset + self.offset * slope, 
+            offset= self.offset / other, #offset,
+            steps= [step / other for step in self.steps] + [Fraction(1)])
+    
+    def concrete(self, value):
+        value = self.slope * value + self.offset
+        
+        for step in self.steps:
+            value = floor(value / step) * step
+            
+        return value
+    
+    
