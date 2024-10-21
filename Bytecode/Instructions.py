@@ -5,7 +5,7 @@ from Datatypes import Ref, Unknown, Array, Keystone
 from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
-
+from copy import deepcopy
 
 class Instruction:
     name: str
@@ -324,18 +324,22 @@ class Invoke(Instruction):
                 parsed = parseMethod(m, args_memory)
                 l.debug("running invoke function")
                 results = parsed.run(depth=400, debug=True)
+                
+                l.debug(f'Results: {results}')
                 # we unwrap the results to have branches
                 # we swap success result with the new stack
                 return_values = []
-                for r in results.keys():
-                    if r != Result.Success:
-                        return_values.append(r)
-                    elif r == Result.Success:
-                        for i in range(results[r]):
+                
+                for key, value in results.items():
+                    if key != Result.Success:
+                        if value != 0:
+                            return_values.append(key)
+                    elif key == Result.Success:
+                        for i in range(value):
                             try:
-                                _,_, *invoke_stack = results.success_states[i]
+                                returnValue = results.returnValue[i]
                                 # TODO check if all values are made private with copies instead of references
-                                return_values.append(State(pc, memory.deepcopy, invoke_stack.pop(), *stack))
+                                return_values.append(State(pc, memory, returnValue, *stack).deepcopy)
                             except Exception as e:
                                 l.error(f"failed to swap success result with the new stack:\n {e}")
                     else:

@@ -14,7 +14,7 @@ from random import randint
 class Results(dict):
     def __init__(self):
         super(Results, self).__init__()
-        self.success_states = [] 
+        self.returnValue = []
 
 class JavaSimulator:
     instructions: list[Instruction]
@@ -86,7 +86,7 @@ class JavaSimulator:
                     if isinstance(r, Result):
                         results[r] += 1
                         if r == Result.Success:
-                            results.success_states.append(state.deepcopy)
+                            results.returnValue.append(state.stack[0])
                     elif r in self.explored:
                         results[Result.RunsForever] += 1
                     else:
@@ -104,6 +104,7 @@ class JavaSimulator:
         if i + 1 == depth:
             l.debug("reached max depth")
             results[Result.Unknown] += 1
+            
         # if len(self.toVisit) > 0: #TODO
         #     l.debug(f"Didn't visit the instructions {self.toVisit}")
         #     return {Result.Unknown: 1}
