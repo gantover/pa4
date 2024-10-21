@@ -247,7 +247,10 @@ class Return(Instruction):
         # self.type = dataFactory.get(type)
     
     def execute(self, pc, memory, *stack):
-        return Result.Success
+        if len(stack) == 0:
+            return None
+        else:
+            return stack[0]
 
 class ArrayLength(Instruction):
     def __init__(self, opr, offset):
@@ -337,7 +340,7 @@ class Invoke(Instruction):
                     elif key == Result.Success:
                         for i in range(value):
                             try:
-                                returnValue = results.returnValue[i]
+                                returnValue = results.returnValues[i]
                                 # TODO check if all values are made private with copies instead of references
                                 return_values.append(State(pc, memory, returnValue, *stack).deepcopy)
                             except Exception as e:

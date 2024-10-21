@@ -14,7 +14,7 @@ from random import randint
 class Results(dict):
     def __init__(self):
         super(Results, self).__init__()
-        self.returnValue = []
+        self.returnValues = []
 
 class JavaSimulator:
     instructions: list[Instruction]
@@ -85,13 +85,15 @@ class JavaSimulator:
                 for r in result:
                     if isinstance(r, Result):
                         results[r] += 1
-                        if r == Result.Success:
-                            results.returnValue.append(state.stack[0])
-                    elif r in self.explored:
-                        results[Result.RunsForever] += 1
+                    elif isinstance(r, State):
+                        if r in self.explored:
+                            results[Result.RunsForever] += 1
+                        else:
+                            self.frontier.append(r)
+                            self.explored.add(r)
                     else:
-                        self.frontier.append(r)
-                        self.explored.add(r)
+                        results[Result.Success] += 1
+                        results.returnValues.append(r)
                         # if the same exact state is added twice to explored
                         # it means that we are into a running forever scenario
                         # the condition to loop was true and since the state has not
