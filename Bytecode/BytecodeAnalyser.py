@@ -61,13 +61,14 @@ class JavaSimulator:
                     
                     if debug:
                         l.debug(f'Result: {result}')
+                        l.debug(self.frontier)
                 except Exception as e:
                     print(f'exception at {i}, while running instruction {instruction}: {e}')
                     result = Result.Unknown
                     
                 
                 # if we don't have a list, make it a list
-                if isinstance(result, Result) or isinstance(result, State):
+                if not isinstance(result, list):
                     result = [result]
                 
                 # checks wheter we have a final result or if the state
@@ -132,8 +133,8 @@ def parseMethod(method, injected_memory = None):
     
     for counter, instruction in enumerate(method["code"]["bytecode"]):
         # l.debug(f'Parsing instruction {instruction}')
-        l.debug(f'parsing instruction {counter}')
-        l.debug(f"treating {instruction}")
+        # l.debug(f'parsing instruction {counter}')
+        # l.debug(f"treating {instruction}")
         instructions.append(instructionFactory.parse(instruction))
     
     if injected_memory == None:

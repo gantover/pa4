@@ -328,28 +328,23 @@ class Invoke(Instruction):
                 l.debug("running invoke function")
                 results = parsed.run(depth=400, debug=True)
                 
-                l.debug(f'Results: {results}')
+                # l.debug(f'Results: {results}')
                 # we unwrap the results to have branches
                 # we swap success result with the new stack
                 return_values = []
                 
                 for key, value in results.items():
-                    if key != Result.Success:
-                        if value != 0:
-                            return_values.append(key)
-                    elif key == Result.Success:
-                        for i in range(value):
-                            try:
-                                returnValue = results.returnValues[i]
-                                if returnValue != None:
-                                    return_values.append(State(pc, memory, returnValue, *stack).deepcopy)
-                                else:
-                                    return_values.append(State(pc, memory, *stack).deepcopy)
-                            except Exception as e:
-                                l.error(f"failed to swap success result with the new stack:\n {e}")
+                    if key != Result.Success and value != 0:
+                        return_values.append(key)
+                
+                if results[Result.Success] != 0:
+                    if self.method.returns is not None:
+                        for returnValue in results.returnValues:
+                            return_values.append(State(pc, memory, returnValue, *stack))    
                     else:
-                        l.error("Unexpected result from invoke run")
-                l.debug(f"!! Return values from invoke !!: {return_values}")
+                        return_values.append(State(pc, memory, *stack))
+                    
+                # l.debug(f"!! Return values from invoke !!: {return_values}")
                 return return_values
             case _:
                 l.error(f"unhandled invoke access type : {self.access}")
