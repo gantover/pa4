@@ -63,7 +63,7 @@ class JavaSimulator:
                         l.debug(f'Result: {result}')
                         l.debug(self.frontier)
                 except Exception as e:
-                    print(f'exception at {i}, while running instruction {instruction}: {e}')
+                    l.error(f'exception at {i}, while running instruction {instruction}: {e}')
                     result = Result.Unknown
                     
                 
@@ -101,6 +101,7 @@ class JavaSimulator:
                         # been updated, the condition stays true
                         # else:
                         #     results[Result.RunsForever] += 1
+                l.debug(self.frontier)
             else:
                 break
         

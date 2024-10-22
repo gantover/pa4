@@ -155,7 +155,7 @@ class NewArray(Instruction):
         # self.type = dataFactory.get(type)
         
         if (dim != 1): #TODO:: implement support for multi dimentional arrays
-            print("Can't handle multidimentional array's at the moment")
+            l.error("Can't handle multidimentional array's at the moment")
     
     def execute(self, pc, memory, length, *stack):
         # for i in range(self.dimensions):
@@ -172,7 +172,7 @@ class Dup(Instruction):
         self.name = opr
         
         if words != 1:
-            print("Can't handle dub words different than 1 atm") #TODO:: fix
+            l.error("Can't handle dub words different than 1 atm") #TODO:: fix
     
     def execute(self, pc, memory, head, *stack):
         return [State(pc, memory, head, head, *stack)]
@@ -432,7 +432,7 @@ class Binary(Instruction):
         try:
             results.append(State(pc, memory, op(), *stack))
         except TypeError as e:
-            print(f"Implement Keystone {self.operant.name} you lazy son of a sun, {val1} {val2}")
+            l.debug(f"Implement Keystone {self.operant.name} you lazy son of a sun, {val1} {val2}")
             l.debug(f'Exception caught in binary: {e}')
             return Result.Unknown
         except Exception as e:

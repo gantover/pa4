@@ -19,16 +19,16 @@ l.debug(f"method content : {m}")
 try:
     import BytecodeAnalyser
 except Exception as e:
-    print("import error", e)
+    l.error("import error", e)
 
 l.debug("--- STATIC ---")
 try:
     parsed = BytecodeAnalyser.parseMethod(m)
 except Exception as e:
-    print("parsing error:", e)
+    l.error("parsing error:", e)
     
 try:
     results = parsed.run(400)
     parsed.interpretResults(results)
 except Exception as e:
-    print("running error:", e)
+    l.error("running error:", e)

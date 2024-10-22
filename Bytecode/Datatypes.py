@@ -495,7 +495,7 @@ class Keystone:
         
         result = Keystone(v, lt, not (gt or lt), gt)
         
-        print({f'{self} // {other} == {result}'})
+        l.debug({f'{self} // {other} == {result}'})
         
         return result
 
@@ -503,14 +503,14 @@ class Keystone:
         return Keystone() #TODO:: Implement
     
         if not isinstance(other, (int, float)):
-            print(f"Cant divide for type {type(other)}")
+            l.debug(f"Cant divide for type {type(other)}")
             return NotImplemented
         
-        print([val == self for val in (self.min, -1, 0, 1, self.max)])
+        l.debug([val == self for val in (self.min, -1, 0, 1, self.max)])
         
         values = [other // val for val in (self.min, -1, 1, self.max) if val == self and val != 0]
         
-        print(f'{other} // {self} produces: {values}')
+        l.debug(f'{other} // {self} produces: {values}')
         
     def __mod__(self, other):
         return Keystone() # TODO:: Implement

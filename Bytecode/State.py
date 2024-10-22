@@ -3,6 +3,7 @@
 from enum import Enum
 from copy import deepcopy
 import parsing
+from Debug import l
 
 class State:
     pc: int
@@ -136,7 +137,7 @@ class MethodDefinition:
         unique_ref += f"({"".join([self.__get_valuetype(arg) for arg in self.args])})"
         # Append return type
         unique_ref += self.__get_valuetype(self.returns)
-        print(unique_ref)
+        l.debug(unique_ref)
         return parsing.MethodId.parse(unique_ref).load()
 
     @staticmethod
