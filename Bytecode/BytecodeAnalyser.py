@@ -126,6 +126,7 @@ class JavaSimulator:
         printFunction(f'{Result.OutOfBounds.value   };{(results[Result.OutOfBounds]     > 0) * 100}%')
         printFunction(f'{Result.Success.value       };{(results[Result.Success]         > 0) * 100}%')
         printFunction(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
+        printFunction(f'{Result.DepthExceeded.value };{(results[Result.DepthExceeded]   > 0) * 100}%')
 
 
 def parseMethod(method, injected_memory = None):

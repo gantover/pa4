@@ -44,6 +44,7 @@ class Result(Enum):
     NullPointer = "null pointer"
     OutOfBounds = "out of bounds"
     Success = "ok"
+    DepthExceeded = "depth exceeded"
     Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
     
 class Comparison(Enum):
