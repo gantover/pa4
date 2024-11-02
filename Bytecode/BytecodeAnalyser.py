@@ -129,7 +129,7 @@ class JavaSimulator:
         printFunction(f'{Result.DepthExceeded.value };{(results[Result.DepthExceeded]   > 0) * 100}%')
 
 
-def parseMethod(method, injected_memory = None):
+def parseMethod(method, injected_memory = None, recursion_limit = 100):
     instructions = []
     pc, memory, *stack = State(0, dict())
     
@@ -142,14 +142,13 @@ def parseMethod(method, injected_memory = None):
     if injected_memory == None:
         for i, param in enumerate(method["params"]):
             if param["type"].get("kind") == "array":
-                # TODO: Array (Ref) should be initialized with "Array" rather than Unknown()
-                # We should probably instead somehow flag a param Array (Ref) and make it produce Unknown values of its type
-                # arrayOfType = param["type"]["type"]["base"]
                 memory[i] = Array(Keystone(), lambda: Keystone())
             else:
                 memory[i] = Keystone()
     else:
         memory = injected_memory
+
+    memory["recursion_depth_limit"] = recursion_limit
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 

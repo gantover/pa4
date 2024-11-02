@@ -5,6 +5,8 @@ from copy import deepcopy
 import parsing
 from Debug import l
 
+METHOD_BYTECODE_STORE = dict()
+
 class State:
     pc: int
     memory: tuple[any]
@@ -139,7 +141,13 @@ class MethodDefinition:
         # Append return type
         unique_ref += self.__get_valuetype(self.returns)
         l.debug(unique_ref)
-        return parsing.MethodId.parse(unique_ref).load()
+
+        bytecode = METHOD_BYTECODE_STORE.get(unique_ref)
+        if not bytecode:
+            bytecode = parsing.MethodId.parse(unique_ref).load()
+            METHOD_BYTECODE_STORE[unique_ref] = bytecode
+
+        return bytecode
 
     @staticmethod
     def __get_valuetype(val):

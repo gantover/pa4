@@ -311,6 +311,9 @@ class Invoke(Instruction):
         from BytecodeAnalyser import parseMethod
         match(self.access):
             case InvokeType.Static | InvokeType.Dynamic:
+                if memory["recursion_depth_limit"] == 0:
+                    return Result.DepthExceeded
+
                 # get the method form json
                 m = self.method.get_bytecode()
 
@@ -324,7 +327,7 @@ class Invoke(Instruction):
 
                 stack = stack[args_length:]
 
-                parsed = parseMethod(m, args_memory)
+                parsed = parseMethod(m, args_memory, memory["recursion_depth_limit"] - 1)
                 l.debug("running invoke function")
                 results = parsed.run(depth=400, debug=True)
                 
