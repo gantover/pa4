@@ -7,19 +7,23 @@ for_science: true
 
 # Underneath here add the tools which you want to run
 tools:
-  # test: 
-  #   technologies:
-  #     - python
-
-  #   executable: ../pa4/main.py
-
-  bytecoder: 
+  staticSign: 
     technologies:
       - bytecode
       - static
+      - sign
       - python
 
-    executable: ../pa4/Bytecode/Bytecode.py
+    executable: ../pa4/Bytecode/BytecodeSign.py
+
+  staticRange:
+    technologies:
+      - bytecode
+      - static
+      - range
+      - python
+    
+    executable: ../pa4/Bytecode/BytecodeRange.py
 
 # Describe your machine here (for research purposes) 
 machine:
