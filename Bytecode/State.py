@@ -12,10 +12,13 @@ class State:
     memory: tuple[any]
     stack: list[any]
     
+    postCopyQueue: list[tuple]
+    
     def __init__(self, pc, memory, *stack):
         self.stack = stack
         self.memory = tuple(memory.items())
         self.pc = pc
+        self.postCopyQueue = []
     
     @property
     def __key(self):
@@ -35,9 +38,20 @@ class State:
     def __repr__(self):
         return f'<state {self.pc} {self.memory} {self.stack}>'
     
+    def queuePostCopyFunction(self, function, *parameters):
+        self.postCopyQueue.append((function, *parameters))
+        return self
+    
     @property
     def deepcopy(self):
-        return deepcopy(self)
+        copy = deepcopy(self)
+        
+        while (copy.postCopyQueue):
+            function, *parameters = copy.postCopyQueue.pop(0)
+            
+            function(*parameters)
+        
+        return copy
 
 class Result(Enum):
     RunsForever = "*"

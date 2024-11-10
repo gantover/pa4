@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 
 from pathlib import Path
-from Datatypes import Ref, Unknown, Array, Keystone
+from Datatypes import Ref, Unknown, Array, IntegerAbstracion
 from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
 from Parsing import SubclassFactory
 from Debug import l
@@ -75,30 +75,34 @@ class If(Instruction):
         
         l.debug(f"If: {val2} {self.condition} {val1} is {result}")
         
-        if isinstance(val2, Keystone) and isinstance(val1, int):
-            val2.update(val1, self.condition)
-        elif isinstance(val2, int) and isinstance(val1, Keystone):
-            val1.update(val2, self.condition.reversed)
+        if isinstance(val2, IntegerAbstracion) and isinstance(val1, int):
+            abstraction = val2
+            other = val1
+            
+            condition = self.condition
+        elif isinstance(val2, int) and isinstance(val1, IntegerAbstracion):
+            abstraction = val1
+            other = val2
+            
+            condition = self.condition.reversed
         
-        jump = State(self.target, memory, *stack).deepcopy
-        
-        if isinstance(val2, Keystone) and isinstance(val1, int):
-            val2.update(val1, self.condition.inverse)
-        elif isinstance(val2, int) and isinstance(val1, Keystone):
-            val1.update(val2, self.condition.reversed.inverse)
-        
-        stay = State(pc, memory, *stack)
+        if abstraction:
+            jump = lambda: State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, condition).deepcopy
+            stay = lambda: State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, condition.inverse).deepcopy
+        else:
+            jump = lambda: State(self.target, memory, *stack)
+            stay = lambda: State(pc, memory, *stack)
         
         match result:
             case True:
                 l.debug("jumping")
-                return [jump]
+                return [jump()]
             case False:
                 l.debug("staying")
-                return [stay]
+                return [stay()]
             case _:
                 l.debug("Cannot evaluate if early")
-                return [stay, jump]
+                return [stay(), jump()]
 
 class IfZ(Instruction):
     condition: Comparison
@@ -111,10 +115,12 @@ class IfZ(Instruction):
     
     def execute(self, pc, memory, val, *stack):
         
+        zero = lambda: 0
+        
         result = {
             Comparison.GreaterThan: lambda: val > 0,
             Comparison.GreaterEqual: lambda: val >= 0,
-            Comparison.NotEqual: lambda: val != 0,
+            Comparison.NotEqual: lambda: val != zero(),
             Comparison.Equal: lambda: val == 0,
             Comparison.LessThan: lambda: val < 0,
             Comparison.LessEqual: lambda: val <= 0
@@ -122,26 +128,45 @@ class IfZ(Instruction):
         
         l.debug(f"If: {val} {self.condition} {0} is {result}")
         
-        if isinstance(val, Keystone):
-            val.update(0, self.condition)
+        # if isinstance(val, IntegerAbstracion):
+        #     val.update(0, self.condition)
         
-        jump = State(self.target, memory, *stack).deepcopy
+        # jump = State(self.target, memory, *stack).deepcopy
         
-        if isinstance(val, Keystone):
-            val.update(0, self.condition.inverse)
+        # if isinstance(val, IntegerAbstracion):
+        #     val.update(0, self.condition.inverse)
         
-        stay = State(pc, memory, *stack)
+        # stay = State(pc, memory, *stack)
+        
+        # match result:
+        #     case True:
+        #         l.debug("jumping")
+        #         return [jump]
+        #     case False:
+        #         l.debug("staying")
+        #         return [stay]
+        #     case _:
+        #         l.debug("Cannot evaluate if early")
+        #         return [stay, jump]
+            
+
+        if isinstance(val, IntegerAbstracion):
+            jump = lambda: State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, self.condition).deepcopy
+            stay = lambda: State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, self.condition.inverse).deepcopy
+        else:
+            jump = lambda: State(self.target, memory, *stack)
+            stay = lambda: State(pc, memory, *stack)
         
         match result:
             case True:
                 l.debug("jumping")
-                return [jump]
+                return [jump()]
             case False:
                 l.debug("staying")
-                return [stay]
+                return [stay()]
             case _:
                 l.debug("Cannot evaluate if early")
-                return [stay, jump]
+                return [stay(), jump()]
 
     
 class NewArray(Instruction):
@@ -435,7 +460,7 @@ class Binary(Instruction):
         try:
             results.append(State(pc, memory, op(), *stack))
         except TypeError as e:
-            l.debug(f"Implement Keystone {self.operant.name} you lazy son of a sun, {val1} {val2}")
+            l.debug(f"Implement {type(val1)} or {type(val2)} {self.operant.name} you lazy son of a sun, {val1} {val2}")
             l.debug(f'Exception caught in binary: {e}')
             return Result.Unknown
         except Exception as e:

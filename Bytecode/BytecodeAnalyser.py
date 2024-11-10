@@ -119,14 +119,16 @@ class JavaSimulator:
     @staticmethod
     def interpretResults(results):
         printFunction = l.debug if results[Result.Unknown] != 0 else print
+        
+        certainty = 99
                     
-        printFunction(f'{Result.AssertionError.value};{(results[Result.AssertionError]  > 0) * 100}%')
-        printFunction(f'{Result.DivisionByZero.value};{(results[Result.DivisionByZero]  > 0) * 100}%')
-        printFunction(f'{Result.NullPointer.value   };{(results[Result.NullPointer]     > 0) * 100}%')
-        printFunction(f'{Result.OutOfBounds.value   };{(results[Result.OutOfBounds]     > 0) * 100}%')
-        printFunction(f'{Result.Success.value       };{(results[Result.Success]         > 0) * 100}%')
-        printFunction(f'{Result.RunsForever.value   };{(results[Result.RunsForever]     > 0) * 100}%')
-        printFunction(f'{Result.DepthExceeded.value };{(results[Result.DepthExceeded]   > 0) * 100}%')
+        printFunction(f'{Result.AssertionError.value};{certainty if results[Result.AssertionError]  > 0 else 100 - certainty }%')
+        printFunction(f'{Result.DivisionByZero.value};{certainty if results[Result.DivisionByZero]  > 0 else 100 - certainty }%')
+        printFunction(f'{Result.NullPointer.value   };{certainty if results[Result.NullPointer]     > 0 else 100 - certainty }%')
+        printFunction(f'{Result.OutOfBounds.value   };{certainty if results[Result.OutOfBounds]     > 0 else 100 - certainty }%')
+        printFunction(f'{Result.Success.value       };{certainty if results[Result.Success]         > 0 else 100 - certainty }%')
+        printFunction(f'{Result.RunsForever.value   };{certainty if results[Result.RunsForever]     > 0 else 100 - certainty }%')
+        printFunction(f'{Result.DepthExceeded.value };{certainty if results[Result.DepthExceeded]   > 0 else 100 - certainty }%')
 
 
 def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursion_limit = 100):

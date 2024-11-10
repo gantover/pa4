@@ -2,6 +2,11 @@
 
 from State import Comparison
 
+class IntegerAbstracion:
+    def update(self):
+        raise NotImplementedError("Abstract method")
+
+
 class Array(dict):
     length: any
     default: any
@@ -50,7 +55,7 @@ class Ref:
     def __ne__(self, other):
         return not(self == other)
     
-class SignedUnknown:
+class SignedUnknown(IntegerAbstracion):
     positive: bool
     zero: bool
     negative: bool
@@ -78,23 +83,45 @@ class SignedUnknown:
         if self.negative:   return -1
         raise Exception("Null interger in Signed Unkown")
     
+    def update(self, value, relation):
+        pos = value > 0
+        zero = value == 0
+        neg = value < 0
+        
+        lt, eq, gt = {
+            Comparison.GreaterThan: (neg, neg, True),
+            Comparison.GreaterEqual: (neg, not pos, True),
+            Comparison.LessThan: (True, pos, pos),
+            Comparison.LessEqual: (True, not neg, pos),
+            Comparison.NotEqual: (not neg, not zero, not pos),
+            Comparison.Equal: (neg, zero, pos),
+            Comparison.Incomparable: (False, False, False)
+        }[relation]
+        
+        self.positive = self.positive and gt
+        self.zero = self.zero and eq
+        self.negative = self.negative and lt
+        
+        if not (self.positive or self.zero or self.negative):
+            raise Exception("Impossible signed unknown")
+        
+        return self
+    
+    @staticmethod
+    def fromValue(value):
+        return SignedUnknown(value > 0, value == 0, value < 0)
+        
+    
     def __hash__(self):
         return hash(self.__key)
-    
-    def __eq__(self, other):
-        if isinstance(other, SignedUnknown):
-            return self.__key == other.__key
-        return False
-    
-    def __ne__(self, other):
-        if isinstance(other, SignedUnknown):
-            return self.__key != other.__key
-        return True
     
     def __repr__(self):
         return f"<Signed Unkown {self.positive * '+'}{self.zero * '0'}{self.negative * '-'}>"
     
     def __add__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+        
         if isinstance(other, SignedUnknown):
             p = self.positive or other.positive
             z = (self.zero and other.zero) or (self.positive and other.negative) or (self.negative and other.positive)
@@ -103,6 +130,9 @@ class SignedUnknown:
         return NotImplemented
         
     def __sub__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
         if isinstance(other, SignedUnknown):
             p = self.positive or other.negative
             z = (self.zero and other.zero) or (self.positive and other.positive) or (self.negative and other.negative)
@@ -111,6 +141,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __mul__(self, other): 
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             p = (self.positive and other.positive) or (self.negative and other.negative)
             z = self.zero or other.zero
@@ -119,6 +153,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __truediv__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if other.zero:
                 return SignedUnknown(False, False, False)
@@ -130,6 +168,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __floordiv__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if other.zero:
                 return SignedUnknown(False, False, False)
@@ -141,6 +183,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __mod__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if other.zero:
                 return SignedUnknown(False, False, False)
@@ -152,6 +198,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __lt__(self, other): 
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
@@ -163,6 +213,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __gt__(self, other): 
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
@@ -174,6 +228,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __le__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
@@ -185,6 +243,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __ge__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
@@ -196,6 +258,10 @@ class SignedUnknown:
         return NotImplemented
     
     def __eq__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
@@ -210,6 +276,10 @@ class SignedUnknown:
         return NotImplemented
         
     def __ne__(self, other):
+        if isinstance(other, (int, bool)):
+            other = self.fromValue(other)
+            
+        
         if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
@@ -284,7 +354,7 @@ NAN = float('nan')
 
 
 
-class Keystone:
+class Keystone(IntegerAbstracion):
     lt: bool
     eq: bool
     gt: bool
@@ -357,6 +427,8 @@ class Keystone:
             self.value = value + 1
         else:
             raise Exception("void keystone detected")
+        
+        return self
         
     
     def __repr__(self):
