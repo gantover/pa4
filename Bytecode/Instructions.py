@@ -327,7 +327,7 @@ class Invoke(Instruction):
 
                 stack = stack[args_length:]
 
-                parsed = parseMethod(m, args_memory, memory["recursion_depth_limit"] - 1)
+                parsed = parseMethod(m, memory["analysis_class"], args_memory, memory["recursion_depth_limit"] - 1)
                 l.debug("running invoke function")
                 results = parsed.run(depth=400, debug=True)
                 

@@ -2,6 +2,7 @@
 
 import sys, logging
 from parsing import MethodId
+from Datatypes import SignedUnknown
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -23,7 +24,7 @@ except Exception as e:
 
 l.debug("--- STATIC ---")
 try:
-    parsed = BytecodeAnalyser.parseMethod(m)
+    parsed = BytecodeAnalyser.parseMethod(m, SignedUnknown)
 except Exception as e:
     l.error("parsing error:", e)
     

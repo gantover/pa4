@@ -129,7 +129,7 @@ class JavaSimulator:
         printFunction(f'{Result.DepthExceeded.value };{(results[Result.DepthExceeded]   > 0) * 100}%')
 
 
-def parseMethod(method, injected_memory = None, recursion_limit = 100):
+def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursion_limit = 100):
     instructions = []
     pc, memory, *stack = State(0, dict())
     
@@ -142,13 +142,14 @@ def parseMethod(method, injected_memory = None, recursion_limit = 100):
     if injected_memory == None:
         for i, param in enumerate(method["params"]):
             if param["type"].get("kind") == "array":
-                memory[i] = Array(Keystone(), lambda: Keystone())
+                memory[i] = Array(analysis_cls(), lambda: analysis_cls())
             else:
-                memory[i] = Keystone()
+                memory[i] = analysis_cls()
     else:
         memory = injected_memory
 
     memory["recursion_depth_limit"] = recursion_limit
+    memory["analysis_class"] = analysis_cls
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 
