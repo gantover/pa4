@@ -97,7 +97,7 @@ class SignedUnknown:
     def __add__(self, other):
         if isinstance(other, SignedUnknown):
             p = self.positive or other.positive
-            z = self.zero and other.zero or self.positive and other.negative or self.negative and other.positive
+            z = (self.zero and other.zero) or (self.positive and other.negative) or (self.negative and other.positive)
             n = self.negative or other.negative
             return SignedUnknown(p, z, n)
         return NotImplemented
@@ -105,40 +105,49 @@ class SignedUnknown:
     def __sub__(self, other):
         if isinstance(other, SignedUnknown):
             p = self.positive or other.negative
-            z = self.zero and other.zero or self.positive and other.positive or self.negative and other.negative
+            z = (self.zero and other.zero) or (self.positive and other.positive) or (self.negative and other.negative)
             n = self.negative or other.positive
             return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __mul__(self, other): 
         if isinstance(other, SignedUnknown):
-            p = self.positive and other.positive or self.positive and self.positive
+            p = (self.positive and other.positive) or (self.negative and other.negative)
             z = self.zero or other.zero
-            n = self.negative and other.positive or self.positive and other.negative
+            n = (self.negative and other.positive) or (self.positive and other.negative)
             return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __truediv__(self, other):
         if isinstance(other, SignedUnknown):
-            p = self.positive and other.positive or self.positive and self.positive
-            z = False
-            n = self.negative and other.positive or self.positive and other.negative
+            if other.zero:
+                return SignedUnknown(False, False, False)
+
+            p = (self.positive and other.positive) or (self.negative and other.negative)
+            z = self.zero
+            n = (self.negative and other.positive) or (self.positive and other.negative)
             return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __floordiv__(self, other):
         if isinstance(other, SignedUnknown):
-            p = self.positive and other.positive or self.positive and self.positive
-            z = False
-            n = self.negative and other.positive or self.positive and other.negative
+            if other.zero:
+                return SignedUnknown(False, False, False)
+
+            p = (self.positive and other.positive) or (self.negative and other.negative)
+            z = (self.positive or self.negative or self.zero) and (other.positive or other.negative)
+            n = (self.negative and other.positive) or (self.positive and other.negative)
             return SignedUnknown(p, z, n)
         return NotImplemented
     
     def __mod__(self, other):
         if isinstance(other, SignedUnknown):
-            p = other.positive and not other.zero
-            z = not other.zero
-            n = other.negative and not other.zero
+            if other.zero:
+                return SignedUnknown(False, False, False)
+
+            p = self.positive
+            z = (self.positive or self.negative or self.zero) and (other.positive or other.negative)
+            n = self.negative
             return SignedUnknown(p, z, n)
         return NotImplemented
     
