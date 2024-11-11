@@ -8,7 +8,7 @@ from Debug import l
 
 from Instructions import Instruction, instructionFactory
 from Datatypes import Unknown, Array, Keystone
-from State import State, Result
+from State import State, Result, Comparison
 from random import randint
 
 class Results(dict):
@@ -144,7 +144,10 @@ def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursi
     if injected_memory == None:
         for i, param in enumerate(method["params"]):
             if param["type"].get("kind") == "array":
-                memory[i] = Array(analysis_cls(), lambda: analysis_cls())
+                arrayLength = analysis_cls()
+                arrayLength.update(0, Comparison.GreaterEqual)
+                
+                memory[i] = Array(arrayLength, lambda: analysis_cls())
             else:
                 memory[i] = analysis_cls()
     else:

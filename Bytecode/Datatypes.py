@@ -646,6 +646,170 @@ class opRange():
         if isinstance(other, opRange):
             return self.lb <= other.ub and other.lb <= self.ub
     
+class interval(IntegerAbstracion):
+    lb: int
+    ub: int
+    isInverted: bool
+    
+    def __init__(self, lb, ub, inverted = False):
+        self.lb = lb
+        self.ub = ub
+        self.isInverted = inverted
+    
+    def isInRange(self, value):
+        return self.lb <= value == value <= self.ub
+    
+    def __contains__(self, value):
+        return self.isInRange(value) ^ self.isInverted
+    
+    def keyValues(self):
+        return {x for x in (-INFINITY, self.lb, -1, 0, 1, self.ub, INFINITY) if x in self}
+    
+    def update(self, value, comparison):
+        pass # TODO
+    
+    def __invert__(self): return interval(self.ub + 1, self.lb - 1, True)
+    def __neg__(self): return intRange(-self.ub, -self.lb, self.isInverted)
+    def __add__(self, other):
+        if isinstance(other, (int, float, bool)):
+            return interval(self.lb + other, self.ub + other, self.isInverted)
+        elif isinstance(other, interval):
+            if self.isInverted and other.isInverted:
+                return interval(-INFINITY, INFINITY)
+            return interval(self.lb + other.lb, self.ub + other.ub, self.isInverted or other.isInverted)
+        return NotImplemented
+            
+    def __radd__(self, other): return self + other
+    def __sub__(self, other): return self + -other
+    def __rsub__(self, other): return -self + other
+    
+    def __mul__(self, other):
+        
+        closedSelf = ~self if self.isInverted else self
+    
+        values = {value * other for value in closedSelf.keyValues()}
+        
+        result = interval(min(values), max(values))
+        
+        return ~result if self.isInverted else result
+            
+    
+    def __rmul__(self, other): self * other
+    def __div__(self, other): pass
+    def __rdiv__(self, other): pass
+    
+    def __ge__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val >= other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
+    
+    def __gt__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val > other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
+    
+    def __le__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val <= other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
+    
+    def __lt__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val < other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
+    
+    def __eq__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val == other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
+    def __ne__(self, other):
+        canBeTrue = False
+        canBeFalse = False
+        
+        for val in self.keyValues():
+            comparison = val != other
+            if comparison is True:
+                canBeTrue = True
+            elif comparison is False:
+                canBeFalse = True
+            else:
+                return Unknown()
+        
+        if canBeTrue and canBeFalse:
+            return Unknown()
+        
+        return canBeTrue
+    
     
 class intRange(IntegerAbstracion):
     lb: int
