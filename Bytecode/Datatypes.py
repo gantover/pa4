@@ -938,8 +938,26 @@ class intRange(IntegerAbstracion):
                 min(pBounds), 
                 max(pBounds))
         return NotImplemented
-    
-    
+
+
+    def __floordiv__(self, other):
+        if isinstance(other, (int, bool)):
+            return intRange(self.lb // other, self.ub // other)
+        if isinstance(other, intRange):
+            
+            pBounds = []
+            
+            for x in (other.lb, -1, 1, other.ub):
+                if x in other and x != 0:
+                    pBounds.extend((self.lb // x, self.ub // x))
+
+            if len(pBounds) == 0:
+                raise Exception(f"No valid divison between {self} and {other}")
+
+            return intRange(min(pBounds), max(pBounds))
+        return NotImplemented
+
+
     def __rdiv__(self, other):
         if isinstance(other, (int, bool)):
             pBounds = []
