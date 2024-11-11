@@ -6,7 +6,7 @@ from typing import List as PyList
 from enum import Enum
 from Debug import l
 
-from Instructions import Instruction, instructionFactory
+from Instructions import Instruction, Push, instructionFactory
 from Datatypes import Unknown, Array, Keystone
 from State import State, Result, Comparison
 from random import randint
@@ -18,14 +18,15 @@ class Results(dict):
 
 class JavaSimulator:
     instructions: list[Instruction]
-    
+    constants: list[int | bool | float]
     frontier: list[State]
     explored: set
     
-    def __init__(self, instructions, initial_state):
+    def __init__(self, instructions, initial_state, constants=[]):
         self.instructions = instructions
         self.frontier = [initial_state]
         self.explored = {initial_state}
+        self.constants = constants
         self.toVisit = {pc for pc in range(len(instructions))}
     
     def update(self, initial_state):
@@ -133,6 +134,7 @@ class JavaSimulator:
 
 def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursion_limit = 100):
     instructions = []
+    constants = []
     pc, memory, *stack = State(0, dict())
     
     for counter, instruction in enumerate(method["code"]["bytecode"]):
@@ -140,7 +142,13 @@ def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursi
         # l.debug(f'parsing instruction {counter}')
         # l.debug(f"treating {instruction}")
         instructions.append(instructionFactory.parse(instruction))
-    
+
+    # constants for latter use with a widening operator
+    for instruction in instructions:
+        if isinstance(instruction, Push):
+            constants.append(instruction.value)
+    l.debug(f"constants : {constants}")
+
     if injected_memory == None:
         for i, param in enumerate(method["params"]):
             if param["type"].get("kind") == "array":
@@ -156,7 +164,7 @@ def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursi
     memory["recursion_depth_limit"] = recursion_limit
     memory["analysis_class"] = analysis_cls
 
-    return JavaSimulator(instructions, State(pc, memory, *stack))
+    return JavaSimulator(instructions, State(pc, memory, *stack), constants)
 
 
 def generate(param, memory: dict, index: int):
