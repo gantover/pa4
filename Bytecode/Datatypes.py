@@ -670,7 +670,7 @@ class intRange(IntegerAbstracion):
             Comparison.LessThan: (self.lb < value, self.ub > value, value - 1),
             Comparison.LessEqual: (self.lb <= value, self.ub <= value, value),
             Comparison.Equal: (self.lb == value, self.ub == value, value),
-            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value + 1),    #can't really do this
+            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value),    #can't really do this
             Comparison.Incomparable: (self.lb > value, self.ub > value, value + 1) #hmmm
         }[relation]
         
@@ -731,7 +731,7 @@ class intRange(IntegerAbstracion):
     def __rmul__(self, other): return self * other
     
     
-    def __mul__(self, other):
+    def __div__(self, other):
         if isinstance(other, (int, bool)):
             return intRange(self.lb / other, self.ub / other)
         
@@ -752,7 +752,7 @@ class intRange(IntegerAbstracion):
         return NotImplemented
     
     
-    def __rmul__(self, other):
+    def __rdiv__(self, other):
         if isinstance(other, (int, bool)):
             pBounds = []
             
