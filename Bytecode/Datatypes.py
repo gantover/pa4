@@ -143,7 +143,6 @@ class SignedUnknown(IntegerAbstracion):
     def __mul__(self, other): 
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
-            
         
         if isinstance(other, SignedUnknown):
             p = (self.positive and other.positive) or (self.negative and other.negative)
@@ -155,7 +154,6 @@ class SignedUnknown(IntegerAbstracion):
     def __truediv__(self, other):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
-            
         
         if isinstance(other, SignedUnknown):
             if other.zero:
@@ -171,7 +169,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if other.zero:
                 return SignedUnknown(False, False, False)
@@ -186,7 +183,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if other.zero:
                 return SignedUnknown(False, False, False)
@@ -201,7 +197,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
@@ -216,7 +211,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
@@ -231,7 +225,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if self.max < other.min:
                 return True
@@ -246,7 +239,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             if self.min > other.max:
                 return True
@@ -261,7 +253,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
@@ -279,7 +270,6 @@ class SignedUnknown(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             other = self.fromValue(other)
             
-        
         if isinstance(other, SignedUnknown):
             p = self.positive and other.positive
             z = self.zero and other.zero
@@ -657,7 +647,7 @@ class opRange():
             return self.lb <= other.ub and other.lb <= self.ub
     
     
-class intRange:
+class intRange(IntegerAbstracion):
     lb: int
     ub: int
     
@@ -673,8 +663,23 @@ class intRange:
         self.lb = lb
         self.ub = ub
     
-    def contains(self, val):
-        return self.lb <= val and val <= self.ub
+    def update(self, value, relation):
+        keeplb, keepub, adjustedValue = {
+            Comparison.GreaterThan: (self.lb > value, self.ub > value, value + 1),
+            Comparison.GreaterEqual: (self.lb >= value, self.ub >= value, value),
+            Comparison.LessThan: (self.lb < value, self.ub > value, value - 1),
+            Comparison.LessEqual: (self.lb <= value, self.ub <= value, value),
+            Comparison.Equal: (self.lb == value, self.ub == value, value),
+            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value + 1),    #can't really do this
+            Comparison.Incomparable: (self.lb > value, self.ub > value, value + 1) #hmmm
+        }[relation]
+        
+        return intRange(self.lb if keeplb else adjustedValue, self.ub if keepub else adjustedValue)
+    
+    def __contains__(self, val):
+        if isinstance(val, (int, bool, float)):
+            return self.lb <= val and val <= self.ub
+        raise ValueError(f"val of unexpected type {type(val)}")
     
     def intersect(self, other):
         if isinstance(other, intRange):
@@ -694,6 +699,87 @@ class intRange:
             
         if self.lb - 1 <= ub and lb - 1 <= self.ub:
             return intRange(min(self.lb, lb), max(self.ub, ub))
+        
+    def __neg__(self):
+        return intRange(-self.ub, -self.lb)
+    
+    def __add__(self, other):
+        if isinstance(other, (int, bool)):
+            return intRange(self.lb + other, self.ub + other)
+        
+        if isinstance(other, intRange):
+            return intRange(
+                self.lb + other.lb, 
+                self.ub + other.ub)
+        return NotImplemented
+    
+    def __radd__(self, other): return self + other
+    def __sub__(self, other): return self + -other
+    def __rsub__(self, other): return -self + other
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, bool)):
+            return intRange(self.lb * other, self.ub * other)
+        
+        if isinstance(other, intRange):
+            pBounds = self.lb * other.lb, self.lb * other.ub, self.ub * other.lb, self.ub * other.ub
+            return intRange(
+                min(pBounds), 
+                max(pBounds))
+        return NotImplemented
+    
+    def __rmul__(self, other): return self * other
+    
+    
+    def __mul__(self, other):
+        if isinstance(other, (int, bool)):
+            return intRange(self.lb / other, self.ub / other)
+        
+        if isinstance(other, intRange):
+            
+            pBounds = []
+            
+            for x in (other.lb, -1, 1, other.ub):
+                if x in other and x != 0:
+                    pBounds.extend((self.lb / x, self.ub / x))
+            
+            if len(pBounds) == 0:
+                raise Exception(f"No valid divison between {self} and {other}")
+            
+            return intRange(
+                min(pBounds), 
+                max(pBounds))
+        return NotImplemented
+    
+    
+    def __rmul__(self, other):
+        if isinstance(other, (int, bool)):
+            pBounds = []
+            
+            for x in (self.lb, -1, 1, self.ub):
+                if x in self and x != 0:
+                    pBounds.append(other / x)
+            
+            if len(pBounds) == 0:
+                raise Exception(f"No valid divison between {self} and {other}")
+            
+            return intRange(min(pBounds), max(pBounds))
+        
+        if isinstance(other, intRange):
+            
+            pBounds = []
+            
+            for x in (self.lb, -1, 1, self.ub):
+                if x in other and x != 0:
+                    pBounds.extend((other.lb / x, other.ub / x))
+            
+            if len(pBounds) == 0:
+                raise Exception(f"No valid divison between {other} and {self}")
+            
+            return intRange(
+                min(pBounds), 
+                max(pBounds))
+        return NotImplemented
 
 class Identity:
     def __hash__(self):

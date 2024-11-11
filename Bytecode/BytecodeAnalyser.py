@@ -120,7 +120,7 @@ class JavaSimulator:
     def interpretResults(results):
         printFunction = l.debug if results[Result.Unknown] != 0 else print
         
-        certainty = 99
+        certainty = 95
                     
         printFunction(f'{Result.AssertionError.value};{certainty if results[Result.AssertionError]  > 0 else 100 - certainty }%')
         printFunction(f'{Result.DivisionByZero.value};{certainty if results[Result.DivisionByZero]  > 0 else 100 - certainty }%')

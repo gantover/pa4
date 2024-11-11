@@ -2,7 +2,7 @@
 
 import sys, logging
 from parsing import MethodId
-from Datatypes import intRange
+from Datatypes import Keystone
 
 l = logging
 l.basicConfig(level=logging.DEBUG)
@@ -24,7 +24,7 @@ except Exception as e:
 
 l.debug("--- STATIC ---")
 try:
-    parsed = BytecodeAnalyser.parseMethod(m, intRange)
+    parsed = BytecodeAnalyser.parseMethod(m, Keystone)
 except Exception as e:
     l.error("parsing error:", e)
     
