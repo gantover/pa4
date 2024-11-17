@@ -823,6 +823,9 @@ class intRange(IntegerAbstracion):
             return super().__new__(cls)
         else:
             return None
+
+    def __repr__(self):
+        return f"<{type(self).__name__} [{self.lb}, {self.ub}]>"
     
     def __init__(self, lb = -INFINITY, ub = INFINITY):
         self.lb = lb
@@ -836,17 +839,22 @@ class intRange(IntegerAbstracion):
         return hash(self.__key)
     
     def update(self, value, relation):
+        if relation == Comparison.NotEqual:
+            raise ValueError(f"{type(self)} cannot be updated with {relation}")
+        
         keeplb, keepub, adjustedValue = {
             Comparison.GreaterThan: (self.lb > value, self.ub > value, value + 1),
             Comparison.GreaterEqual: (self.lb >= value, self.ub >= value, value),
-            Comparison.LessThan: (self.lb < value, self.ub > value, value - 1),
+            Comparison.LessThan: (self.lb < value, self.ub < value, value - 1),
             Comparison.LessEqual: (self.lb <= value, self.ub <= value, value),
             Comparison.Equal: (self.lb == value, self.ub == value, value),
-            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value),    #can't really do this
+            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value), #can't really do this
             Comparison.Incomparable: (self.lb > value, self.ub > value, value + 1) #hmmm
         }[relation]
-        
-        return intRange(self.lb if keeplb else adjustedValue, self.ub if keepub else adjustedValue)
+
+        self.lb = self.lb if keeplb else adjustedValue
+        self.ub = self.ub if keepub else adjustedValue
+        # return intRange(self.lb if keeplb else adjustedValue, self.ub if keepub else adjustedValue)
     
     def __contains__(self, val):
         if isinstance(val, (int, bool, float)):
@@ -957,6 +965,8 @@ class intRange(IntegerAbstracion):
             return intRange(min(pBounds), max(pBounds))
         return NotImplemented
 
+    def __rfloordiv__(self, other):
+        return self.__floordiv__(other)
 
     def __rdiv__(self, other):
         if isinstance(other, (int, bool)):
