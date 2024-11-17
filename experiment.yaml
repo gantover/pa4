@@ -25,6 +25,15 @@ tools:
     
     executable: ../pa4/Bytecode/BytecodeRange.py
 
+  staticWideRange:
+    technologies:
+      - bytecode
+      - static
+      - range
+      - python
+    
+    executable: ../pa4/Bytecode/BytecodeWideRange.py
+
 # Describe your machine here (for research purposes) 
 machine:
   os: generic 

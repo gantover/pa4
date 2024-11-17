@@ -15,6 +15,9 @@ class Array(dict):
         self.length = length
         self.default = default
         super(Array, self).__init__(**kwargs)
+    
+    def __repr__(self) -> str:
+        return f'<Array {super().__repr__()}>'
 
     def __getitem__(self, key):
         if key in self:
@@ -292,6 +295,7 @@ class SignedUnknown(IntegerAbstracion):
     def __rmod__(self, other): return Unknown()
 
 class Unknown:
+    def __neg__(self): return Unknown()
     def __add__(self, other): return Unknown()
     def __sub__(self, other): return Unknown()
     def __mul__(self, other): return Unknown()
@@ -822,23 +826,38 @@ class intRange(IntegerAbstracion):
             return super().__new__(cls)
         else:
             return None
+
+    def __repr__(self):
+        return f"<{type(self).__name__} [{self.lb}, {self.ub}]>"
     
     def __init__(self, lb = -INFINITY, ub = INFINITY):
         self.lb = lb
         self.ub = ub
+
+    @property
+    def __key(self):
+        return self.lb, self.ub
+
+    def __hash__(self) -> int:
+        return hash(self.__key)
     
     def update(self, value, relation):
+        if relation == Comparison.NotEqual:
+            raise ValueError(f"{type(self)} cannot be updated with {relation}")
+        
         keeplb, keepub, adjustedValue = {
             Comparison.GreaterThan: (self.lb > value, self.ub > value, value + 1),
             Comparison.GreaterEqual: (self.lb >= value, self.ub >= value, value),
-            Comparison.LessThan: (self.lb < value, self.ub > value, value - 1),
+            Comparison.LessThan: (self.lb < value, self.ub < value, value - 1),
             Comparison.LessEqual: (self.lb <= value, self.ub <= value, value),
             Comparison.Equal: (self.lb == value, self.ub == value, value),
-            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value),    #can't really do this
+            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value), #can't really do this
             Comparison.Incomparable: (self.lb > value, self.ub > value, value + 1) #hmmm
         }[relation]
-        
-        return intRange(self.lb if keeplb else adjustedValue, self.ub if keepub else adjustedValue)
+
+        self.lb = self.lb if keeplb else adjustedValue
+        self.ub = self.ub if keepub else adjustedValue
+        # return intRange(self.lb if keeplb else adjustedValue, self.ub if keepub else adjustedValue)
     
     def __contains__(self, val):
         if isinstance(val, (int, bool, float)):
@@ -863,9 +882,25 @@ class intRange(IntegerAbstracion):
             
         if self.lb - 1 <= ub and lb - 1 <= self.ub:
             return intRange(min(self.lb, lb), max(self.ub, ub))
+
+    @staticmethod
+    def asRange(value):
+        if isinstance(value, intRange):
+            return value
+        if isinstance(value, (int, bool)):
+            # Necessary hack to allow initialisation of range [x, x]
+            r = intRange()
+            r.lb, r.ub = value, value
+            return r
+        
+        raise TypeError(f"Attemped unimplemented conversion from type {type(value)} to {intRange}")
         
     def __neg__(self):
         return intRange(-self.ub, -self.lb)
+
+    ################################################
+    ############## Binary Operationss ##############
+    ################################################
     
     def __add__(self, other):
         if isinstance(other, (int, bool)):
@@ -914,8 +949,28 @@ class intRange(IntegerAbstracion):
                 min(pBounds), 
                 max(pBounds))
         return NotImplemented
-    
-    
+
+
+    def __floordiv__(self, other):
+        if isinstance(other, (int, bool)):
+            return intRange(self.lb // other, self.ub // other)
+        if isinstance(other, intRange):
+            
+            pBounds = []
+            
+            for x in (other.lb, -1, 1, other.ub):
+                if x in other and x != 0:
+                    pBounds.extend((self.lb // x, self.ub // x))
+
+            if len(pBounds) == 0:
+                raise Exception(f"No valid divison between {self} and {other}")
+
+            return intRange(min(pBounds), max(pBounds))
+        return NotImplemented
+
+    def __rfloordiv__(self, other):
+        return self.__floordiv__(other)
+
     def __rdiv__(self, other):
         if isinstance(other, (int, bool)):
             pBounds = []
@@ -944,6 +999,59 @@ class intRange(IntegerAbstracion):
                 min(pBounds), 
                 max(pBounds))
         return NotImplemented
+
+    #########################################
+    ############## Comparisons ##############
+    #########################################
+
+    def __lt__(self, other):
+        other = intRange.asRange(other)
+        
+        if self.ub < other.lb:
+            return True
+        if self.lb >= other.ub:
+            return False
+
+        return Unknown()
+
+
+    def __gt__(self, other):
+        return intRange.asRange(other) < self
+
+
+    def __le__(self, other):
+        other = intRange.asRange(other)
+
+        if self.ub <= other.lb:
+            return True
+        if self.lb > other.ub:
+            return False
+
+        return Unknown()
+
+
+    def __ge__(self, other):
+        return intRange.asRange(other) <= self
+
+    
+    def __eq__(self, other):
+        other = intRange.asRange(other)
+
+        if self.lb == other.lb and self.ub == other.ub:
+            return True
+        if self.ub < other.lb or self.lb > other.ub:
+            return False
+
+        return Unknown()
+
+
+    def __ne__(self, other):
+        eq = self == intRange.asRange(other)
+        if isinstance(eq, Unknown):
+            return eq
+        return not eq
+
+
 
 class Identity:
     def __hash__(self):
