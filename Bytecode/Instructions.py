@@ -74,7 +74,8 @@ class If(Instruction):
         }[self.condition]()
         
         l.debug(f"If: {val2} {self.condition} {val1} is {result}")
-        
+
+        abstraction = None
         if isinstance(val2, IntegerAbstracion) and isinstance(val1, int):
             abstraction = val2
             other = val1
