@@ -15,6 +15,9 @@ class Array(dict):
         self.length = length
         self.default = default
         super(Array, self).__init__(**kwargs)
+    
+    def __repr__(self) -> str:
+        return f'<Array {super().__repr__()}>'
 
     def __getitem__(self, key):
         if key in self:
