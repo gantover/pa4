@@ -657,7 +657,7 @@ class interval(IntegerAbstracion):
         self.isInverted = inverted
     
     def isInRange(self, value):
-        return self.lb <= value == value <= self.ub
+        return (self.lb <= value) == (value <= self.ub)
     
     def __contains__(self, value):
         return self.isInRange(value) ^ self.isInverted
