@@ -1,6 +1,13 @@
 ﻿#!/usr/bin/env python3
 
 from State import Comparison
+from math import isinf
+
+def jmod(a, b):
+    # non-optimal implementation of remainder (%) operator that behaves the same as in Java
+    res = (abs(a) - (abs(a) // abs(b)) * abs(b))
+    return -res if a < 0 else res
+
 
 class IntegerAbstracion:
     def update(self):
@@ -851,7 +858,7 @@ class intRange(IntegerAbstracion):
             Comparison.LessThan: (self.lb < value, self.ub < value, value - 1),
             Comparison.LessEqual: (self.lb <= value, self.ub <= value, value),
             Comparison.Equal: (self.lb == value, self.ub == value, value),
-            Comparison.NotEqual: (self.lb!= value, self.ub !=value, value), #can't really do this
+            Comparison.NotEqual: (self.lb != value, self.ub != value, value), #can't really do this
             Comparison.Incomparable: (self.lb > value, self.ub > value, value + 1) #hmmm
         }[relation]
 
@@ -953,7 +960,10 @@ class intRange(IntegerAbstracion):
 
     def __floordiv__(self, other):
         if isinstance(other, (int, bool)):
-            return intRange(self.lb // other, self.ub // other)
+            return intRange(
+                self.lb / other if self.lb == -INFINITY else self.lb // other,
+                self.ub / other if self.ub == INFINITY else self.ub // other
+            )
         if isinstance(other, intRange):
             
             pBounds = []
@@ -999,6 +1009,27 @@ class intRange(IntegerAbstracion):
                 min(pBounds), 
                 max(pBounds))
         return NotImplemented
+
+    def __mod__(self, other):
+        new = intRange()
+        if isinstance(other, (int, bool)):
+            other = abs(other) # in Java remainder, the sign of the second operant is irrelevant
+            diff = self.lb - self.ub
+            if not isinf(diff) and diff < other:
+                new.lb = jmod(self.lb, other)
+                new.ub = jmod(self.ub, other)
+            else:
+                new.lb = max(self.lb, -(other - 1))
+                new.ub = min(self.ub, other - 1)
+            return new
+        if isinstance(other, intRange):
+            return self % max(abs(other.lb), abs(other.ub))
+        if other == INFINITY:
+            return self
+        return NotImplemented
+
+    def __rmod__(self, other):
+        return intRange.asRange(other) % self
 
     #########################################
     ############## Comparisons ##############
@@ -1185,5 +1216,3 @@ class divisibleLinearUnkown:
             value = floor(value / step) * step
             
         return value
-    
-    

@@ -88,23 +88,21 @@ class If(Instruction):
             condition = self.condition.reversed
         
         if abstraction:
-            jumpStateCopy = State(self.target, memory, *stack).queuePostCopyFunction
             if isinstance(abstraction, intRange) and condition == Comparison.NotEqual:
                 jump = lambda: [
-                    jumpStateCopy(abstraction.update, other, Comparison.GreaterThan).deepcopy,
-                    jumpStateCopy(abstraction.update, other, Comparison.LessThan).deepcopy
+                    State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.GreaterThan).deepcopy,
+                    State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.LessThan).deepcopy
                 ]
             else:
-                jump = lambda: [jumpStateCopy(abstraction.update, other, condition).deepcopy]
+                jump = lambda: [State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, condition).deepcopy]
 
-            stayStateCopy = State(pc, memory, *stack).queuePostCopyFunction
             if isinstance(abstraction, intRange) and condition.inverse == Comparison.NotEqual:
                 stay = lambda: [
-                    stayStateCopy(abstraction.update, other, Comparison.GreaterThan).deepcopy, 
-                    stayStateCopy(abstraction.update, other, Comparison.LessThan).deepcopy
+                    State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.GreaterThan).deepcopy, 
+                    State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.LessThan).deepcopy
                 ]
             else:
-                stay = lambda: [stayStateCopy(abstraction.update, other, condition.inverse).deepcopy]
+                stay = lambda: [State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, condition.inverse).deepcopy]
         else:
             jump = lambda: [State(self.target, memory, *stack)]
             stay = lambda: [State(pc, memory, *stack)]
@@ -133,6 +131,7 @@ class IfZ(Instruction):
         
         zero = lambda: 0
         
+        l.debug(f"IfZ: {val} {self.condition} {0}")
         result = {
             Comparison.GreaterThan: lambda: val > 0,
             Comparison.GreaterEqual: lambda: val >= 0,
@@ -142,7 +141,7 @@ class IfZ(Instruction):
             Comparison.LessEqual: lambda: val <= 0
         }[self.condition]()
         
-        l.debug(f"If: {val} {self.condition} {0} is {result}")
+        l.debug(f"IfZ: {val} {self.condition} {0} is {result}")
         
         # if isinstance(val, IntegerAbstracion):
         #     val.update(0, self.condition)
@@ -167,17 +166,21 @@ class IfZ(Instruction):
             
 
         if isinstance(val, IntegerAbstracion):
-            jumpStateCopy = State(self.target, memory, *stack).queuePostCopyFunction
             if isinstance(val, intRange) and self.condition == Comparison.NotEqual:
-                jump = lambda: [jumpStateCopy(val.update, 0, Comparison.GreaterThan).deepcopy, jumpStateCopy(val.update, 0, Comparison.LessThan).deepcopy]
+                jump = lambda: [
+                    State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.GreaterThan).deepcopy,
+                    State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.LessThan).deepcopy
+                ]
             else:
-                jump = lambda: [jumpStateCopy(val.update, 0, self.condition).deepcopy]
+                jump = lambda: [State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, self.condition).deepcopy]
 
-            stayStateCopy = State(pc, memory, *stack).queuePostCopyFunction
             if isinstance(val, intRange) and self.condition.inverse == Comparison.NotEqual:
-                stay = lambda: [stayStateCopy(val.update, 0, Comparison.GreaterThan).deepcopy, stayStateCopy(val.update, 0, Comparison.LessThan).deepcopy]
+                stay = lambda: [
+                    State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.GreaterThan).deepcopy,
+                    State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.LessThan).deepcopy
+                ]
             else:
-                stay = lambda: [stayStateCopy(val.update, 0, self.condition.inverse).deepcopy]
+                stay = lambda: [State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, self.condition.inverse).deepcopy]
         else:
             jump = lambda: [State(self.target, memory, *stack)]
             stay = lambda: [State(pc, memory, *stack)]
@@ -483,7 +486,9 @@ class Binary(Instruction):
         }[self.operant]
         
         try:
-            results.append(State(pc, memory, op(), *stack))
+            result = op()
+            l.debug(f"BinaryOp : {val2} {self.operant} {val1} is {result}")
+            results.append(State(pc, memory, result, *stack))
         except TypeError as e:
             l.debug(f"Implement {type(val1)} or {type(val2)} {self.operant.name} you lazy son of a sun, {val1} {val2}")
             l.debug(f'Exception caught in binary: {e}')
