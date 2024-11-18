@@ -680,7 +680,7 @@ class interval(IntegerAbstracion):
         pass # TODO
     
     def __invert__(self): return interval(self.ub + 1, self.lb - 1, True)
-    def __neg__(self): return intRange(-self.ub, -self.lb, self.isInverted)
+    def __neg__(self): return interval(-self.ub, -self.lb, self.isInverted)
     def __add__(self, other):
         if isinstance(other, (int, float, bool)):
             return interval(self.lb + other, self.ub + other, self.isInverted)
@@ -826,7 +826,7 @@ class intRange(IntegerAbstracion):
     lb: int
     ub: int
     
-    def __new__(cls, lb = -INFINITY, ub = INFINITY):
+    def __new__(cls, lb = -2147483648, ub = 2147483647):
         if lb == ub:
             return lb
         elif lb < ub:
