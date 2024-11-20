@@ -32,4 +32,5 @@ try:
     results = parsed.run(400)
     parsed.interpretResults(results)
 except Exception as e:
+    print("running error:", e)
     l.error("running error:", e)

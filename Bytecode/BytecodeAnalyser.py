@@ -6,7 +6,7 @@ from typing import List as PyList
 from enum import Enum
 from Debug import l
 
-from Instructions import Instruction, Push, instructionFactory
+from Instructions import Call, Instruction, Push, instructionFactory
 from Datatypes import Unknown, Array, Keystone
 from WideIntRange import constants
 from State import State, Result, Comparison
@@ -92,6 +92,9 @@ class JavaSimulator:
                         else:
                             self.frontier.append(r)
                             self.explored.add(r)
+                    elif isinstance(r, Call):
+                        results[Result.Unknown] += 1
+                        pass
                     else:
                         results[Result.Success] += 1
                         results.returnValues.append(r)
@@ -129,6 +132,56 @@ class JavaSimulator:
         printFunction(f'{Result.Success.value       };{certainty if results[Result.Success]         > 0 else 100 - certainty }%')
         printFunction(f'{Result.RunsForever.value   };{certainty if results[Result.RunsForever]     > 0 else 100 - certainty }%')
         printFunction(f'{Result.DepthExceeded.value };{certainty if results[Result.DepthExceeded]   > 0 else 100 - certainty }%')
+
+def Invokation():
+    from BytecodeAnalyser import parseMethod
+    match(self.access):
+        case InvokeType.Static | InvokeType.Dynamic:
+            if memory["recursion_depth_limit"] == 0:
+                return Result.DepthExceeded
+
+            
+            # get the arguments list
+            
+            
+            
+            # get the method form json
+            m = self.method.get_bytecode()
+
+            parsed = parseMethod(m, memory["analysis_class"], args_memory, memory["recursion_depth_limit"] - 1)
+            l.debug("running invoke function")
+            results = parsed.run(depth=400, debug=True)
+            
+            # l.debug(f'Results: {results}')
+            # we unwrap the results to have branches
+            # we swap success result with the new stack
+            return_values = []
+            
+            for key, value in results.items():
+                if key != Result.Success and value != 0:
+                    return_values.append(key)
+            
+            if results[Result.Success] != 0:
+                if self.method.returns is not None:
+                    for returnValue in results.returnValues:
+                        return_values.append(State(pc, memory, returnValue, *stack))    
+                else:
+                    return_values.append(State(pc, memory, *stack))
+                
+            # l.debug(f"!! Return values from invoke !!: {return_values}")
+            return return_values
+        case InvokeType.Interface | InvokeType.Virtual:
+            # TODO: Implement for classes
+            pass
+        case _:
+            l.error(f"unhandled invoke access type : {self.access}")
+
+    methodRef, *stack = stack
+
+    if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
+        return [State(pc, memory, *stack)]
+
+    return Result.Unknown
 
 
 def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursion_limit = 100):

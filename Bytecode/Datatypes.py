@@ -1,5 +1,8 @@
 ﻿#!/usr/bin/env python3
 
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Self
 from State import Comparison
 from math import isinf
 
@@ -65,15 +68,69 @@ class Ref:
     def __ne__(self, other):
         return not(self == other)
     
+class Symbol(Enum):
+    Add = auto()
+    Mul = auto()
+    TrueDiv = auto()
+    FloorDiv = auto()
+    Mod = auto()
+    Neg = auto()
+
+@dataclass
+class Tracker:
+    base : Self
+    symbol: Symbol
+    value: int | float = 0
+    
+    def __add__(self, other):
+        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
+        return Tracker(self, Symbol.Add, other)
+    
+    def __mul__(self, other):
+        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
+        return Tracker(self, Symbol.Mul, other)
+    
+    def __truediv__(self, other):
+        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
+        return Tracker(self, Symbol.TrueDiv, other)
+    
+    def __floordiv__(self, other):
+        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
+        return Tracker(self, Symbol.FloorDiv, other)
+    
+    def __mod__(self, other):
+        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
+        return Tracker(self, Symbol.Mod, other)
+    
+    def __neg__(self):
+        return Tracker(self, Symbol.Neg)
+    
+    def reverse(self, value):
+        # return self.symbol, self.base
+        return {
+            Symbol.Add : lambda: self.base.reverse(value - self.other),
+            Symbol.Mul : lambda: self.base.reverse(value / self.other),
+            Symbol.TrueDiv : lambda: self.base.reverse(value * self.other),
+            Symbol.FloorDiv : lambda: self.base.reverse(value * self.other),
+            Symbol.Mod : lambda: None,
+            Symbol.Neg : lambda: -value,
+            None: lambda: value
+        }[self.symbol]()
+        
+        
+        
+    
 class SignedUnknown(IntegerAbstracion):
     positive: bool
     zero: bool
     negative: bool
+    original: Tracker
     
-    def __init__(self, positive = True, zero = True, negative = True):
+    def __init__(self, positive = True, zero = True, negative = True, original = None):
         self.positive = positive
         self.zero = zero
         self.negative = negative
+        self.original = original if original is not None else Tracker(None, None)
     
     @property
     def __key(self):
@@ -136,7 +193,7 @@ class SignedUnknown(IntegerAbstracion):
             p = self.positive or other.positive
             z = (self.zero and other.zero) or (self.positive and other.negative) or (self.negative and other.positive)
             n = self.negative or other.negative
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original + other)
         return NotImplemented
         
     def __sub__(self, other):
@@ -147,7 +204,7 @@ class SignedUnknown(IntegerAbstracion):
             p = self.positive or other.negative
             z = (self.zero and other.zero) or (self.positive and other.positive) or (self.negative and other.negative)
             n = self.negative or other.positive
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original + -other)
         return NotImplemented
     
     def __mul__(self, other): 
@@ -158,7 +215,7 @@ class SignedUnknown(IntegerAbstracion):
             p = (self.positive and other.positive) or (self.negative and other.negative)
             z = self.zero or other.zero
             n = (self.negative and other.positive) or (self.positive and other.negative)
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original * other)
         return NotImplemented
     
     def __truediv__(self, other):
@@ -172,7 +229,7 @@ class SignedUnknown(IntegerAbstracion):
             p = (self.positive and other.positive) or (self.negative and other.negative)
             z = self.zero
             n = (self.negative and other.positive) or (self.positive and other.negative)
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original / other)
         return NotImplemented
     
     def __floordiv__(self, other):
@@ -186,7 +243,7 @@ class SignedUnknown(IntegerAbstracion):
             p = (self.positive and other.positive) or (self.negative and other.negative)
             z = (self.positive or self.negative or self.zero) and (other.positive or other.negative)
             n = (self.negative and other.positive) or (self.positive and other.negative)
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original // other)
         return NotImplemented
     
     def __mod__(self, other):
@@ -200,7 +257,7 @@ class SignedUnknown(IntegerAbstracion):
             p = self.positive
             z = (self.positive or self.negative or self.zero) and (other.positive or other.negative)
             n = self.negative
-            return SignedUnknown(p, z, n)
+            return SignedUnknown(p, z, n, self.original % other)
         return NotImplemented
     
     def __lt__(self, other): 
@@ -605,7 +662,7 @@ class intRange(IntegerAbstracion):
     lb: int
     ub: int
     
-    def __new__(cls, lb = -2147483648, ub = 2147483647):
+    def __new__(cls, lb = -2147483648, ub = 2147483647, tracking = None):
         if lb == ub:
             return lb
         elif lb < ub:
@@ -616,9 +673,10 @@ class intRange(IntegerAbstracion):
     def __repr__(self):
         return f"<{type(self).__name__} [{self.lb}, {self.ub}]>"
     
-    def __init__(self, lb = -INFINITY, ub = INFINITY):
+    def __init__(self, lb = -2147483648, ub = 2147483647, tracking = None):
         self.lb = lb
         self.ub = ub
+        self.tracking = tracking if tracking is not None else Tracker(None, None)
 
     @property
     def __key(self):
@@ -628,6 +686,8 @@ class intRange(IntegerAbstracion):
         return hash(self.__key)
     
     def update(self, value, relation):
+        print(self.tracking.reverse(value))
+        
         if relation == Comparison.NotEqual:
             raise ValueError(f"{type(self)} cannot be updated with {relation}")
         
@@ -682,7 +742,7 @@ class intRange(IntegerAbstracion):
         raise TypeError(f"Attemped unimplemented conversion from type {type(value)} to {intRange}")
         
     def __neg__(self):
-        return intRange(-self.ub, -self.lb)
+        return intRange(-self.ub, -self.lb, -self.tracking)
 
     ################################################
     ############## Binary Operationss ##############
@@ -690,12 +750,13 @@ class intRange(IntegerAbstracion):
     
     def __add__(self, other):
         if isinstance(other, (int, bool)):
-            return intRange(self.lb + other, self.ub + other)
+            return intRange(self.lb + other, self.ub + other, self.tracking + other)
         
         if isinstance(other, intRange):
             return intRange(
                 self.lb + other.lb, 
-                self.ub + other.ub)
+                self.ub + other.ub)#,
+                # self.tracking + other.tracking)
         return NotImplemented
     
     def __radd__(self, other): return self + other
@@ -704,13 +765,14 @@ class intRange(IntegerAbstracion):
     
     def __mul__(self, other):
         if isinstance(other, (int, bool)):
-            return intRange(self.lb * other, self.ub * other)
+            return intRange(self.lb * other, self.ub * other, self.tracking * other)
         
         if isinstance(other, intRange):
             pBounds = self.lb * other.lb, self.lb * other.ub, self.ub * other.lb, self.ub * other.ub
             return intRange(
                 min(pBounds), 
-                max(pBounds))
+                max(pBounds))#,
+                # self.tracking * other.tracking)
         return NotImplemented
     
     def __rmul__(self, other): return self * other
@@ -718,7 +780,7 @@ class intRange(IntegerAbstracion):
     
     def __div__(self, other):
         if isinstance(other, (int, bool)):
-            return intRange(self.lb / other, self.ub / other)
+            return intRange(self.lb / other, self.ub / other, self.tracking / other)
         
         if isinstance(other, intRange):
             
@@ -741,7 +803,8 @@ class intRange(IntegerAbstracion):
         if isinstance(other, (int, bool)):
             return intRange(
                 self.lb / other if self.lb == -INFINITY else self.lb // other,
-                self.ub / other if self.ub == INFINITY else self.ub // other
+                self.ub / other if self.ub == INFINITY else self.ub // other,
+                self.tracking // other
             )
         if isinstance(other, intRange):
             

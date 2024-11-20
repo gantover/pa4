@@ -350,6 +350,18 @@ class New(Instruction):
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, Ref(self.javaClass), *stack)]
 
+class Call:
+    access: InvokeType
+    method: MethodDefinition
+    args: dict
+    return_pc: int
+    return_memory: dict
+    return_stack : tuple
+    
+    def __init__(self, access, method, args, return_pc, return_memory, return_stack):
+        self.access = access
+        self.method = method
+
 class Invoke(Instruction):
     access: InvokeType
     method: MethodDefinition
@@ -361,59 +373,23 @@ class Invoke(Instruction):
     
     def execute(self, pc, memory, *stack):
         
-        from BytecodeAnalyser import parseMethod
-        match(self.access):
-            case InvokeType.Static | InvokeType.Dynamic:
-                if memory["recursion_depth_limit"] == 0:
-                    return Result.DepthExceeded
+        # return Call()
+        args = self.method.args
+        args_length = len(args)
+        # args_memory_list = stack[:args_length] 
+        # args_memory = dict() 
+        # for i in range(args_length):
+        #     args_memory[i] = args_memory_list[i]
 
-                # get the method form json
-                m = self.method.get_bytecode()
+        # stack = stack[args_length:]
 
-                # get the arguments list
-                args = self.method.args
-                args_length = len(args)
-                args_memory_list = stack[:args_length] 
-                args_memory = dict() 
-                for i in range(args_length):
-                    args_memory[i] = args_memory_list[i]
-
-                stack = stack[args_length:]
-
-                parsed = parseMethod(m, memory["analysis_class"], args_memory, memory["recursion_depth_limit"] - 1)
-                l.debug("running invoke function")
-                results = parsed.run(depth=400, debug=True)
-                
-                # l.debug(f'Results: {results}')
-                # we unwrap the results to have branches
-                # we swap success result with the new stack
-                return_values = []
-                
-                for key, value in results.items():
-                    if key != Result.Success and value != 0:
-                        return_values.append(key)
-                
-                if results[Result.Success] != 0:
-                    if self.method.returns is not None:
-                        for returnValue in results.returnValues:
-                            return_values.append(State(pc, memory, returnValue, *stack))    
-                    else:
-                        return_values.append(State(pc, memory, *stack))
-                    
-                # l.debug(f"!! Return values from invoke !!: {return_values}")
-                return return_values
-            case InvokeType.Interface | InvokeType.Virtual:
-                # TODO: Implement for classes
-                pass
-            case _:
-                l.error(f"unhandled invoke access type : {self.access}")
-
-        methodRef, *stack = stack
-    
-        if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
-            return [State(pc, memory, *stack)]
-
-        return Result.Unknown # Some parts of invoke not yet implemented
+        args = {i: x for i, x in enumerate(stack[:args_length])}
+        
+        return Call(self.access, self.method, args, pc, memory, stack[args_length:])
+        
+        
+        
+         # Some parts of invoke not yet implemented
         
 class Throw(Instruction):
     def __init__(self, opr, offset):
