@@ -674,7 +674,6 @@ class Keystone(IntegerAbstracion):
     def __mul__(self, other):
         return Keystone() # TODO:: Implement
 
-
 class intRange(IntegerAbstracion):
     lb: int
     ub: int

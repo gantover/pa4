@@ -39,6 +39,9 @@ class Results(dict):
         super(Results, self).__init__()
         self.returnValues = []
 
+
+
+
 class JavaSimulator:
     instructions: list[Instruction]
     frontier: list[State]

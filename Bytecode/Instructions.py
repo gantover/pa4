@@ -302,7 +302,7 @@ class Return(Instruction):
     
     def execute(self, pc, memory, *stack):
         if len(stack) == 0:
-            return None
+            return Result.Success
         else:
             return stack[0]
 
