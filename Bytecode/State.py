@@ -61,6 +61,7 @@ class Result(Enum):
     OutOfBounds = "out of bounds"
     Success = "ok"
     DepthExceeded = "depth exceeded"
+    NoResult = "No result"
     Unknown = "Unknown result" #TODO:: REMOVE, pending implementation of everything else
     
 class Comparison(Enum):

@@ -114,7 +114,7 @@ class JavaSimulator:
                 
                     
                 for r in result:
-                    if not isinstance(r, State) and r is not None:
+                    if not isinstance(r, State) and r is not Result.NoResult:
                         # print(trace(state))
                         # print(extractAbstractions(state))
                         traces = [(i, a.tracking.reverse(a.lb), a.tracking.reverse(a.ub)) for i, a in extractAbstractions(state)]
@@ -149,9 +149,9 @@ class JavaSimulator:
                         # print(trace(state))
                         results[Result.Unknown] += 1
                         pass
-                    # else:
-                    #     results[Result.Success] += 1
-                    #     results.returnValues.append(r)
+                    else:
+                        results[Result.Success] += 1
+                        results.returnValues.append(r)
                         # if the same exact state is added twice to explored
                         # it means that we are into a running forever scenario
                         # the condition to loop was true and since the state has not
