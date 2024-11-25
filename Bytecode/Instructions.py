@@ -1,5 +1,6 @@
 ﻿#!/usr/bin/env python3
 
+from dataclasses import dataclass
 from pathlib import Path
 from Datatypes import Ref, Unknown, Array, IntegerAbstracion, intRange
 from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
@@ -350,6 +351,7 @@ class New(Instruction):
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, Ref(self.javaClass), *stack)]
 
+@dataclass
 class Call:
     access: InvokeType
     method: MethodDefinition
@@ -357,10 +359,6 @@ class Call:
     return_pc: int
     return_memory: dict
     return_stack : tuple
-    
-    def __init__(self, access, method, args, return_pc, return_memory, return_stack):
-        self.access = access
-        self.method = method
 
 class Invoke(Instruction):
     access: InvokeType
@@ -372,6 +370,12 @@ class Invoke(Instruction):
         self.method = MethodDefinition(**method)
     
     def execute(self, pc, memory, *stack):
+        
+        
+        if self.method.ref['name'] == "java/lang/AssertionError": #TODO::TEMP
+            return [State(pc, memory, *stack)]
+        
+        # print("INVOKE", self.method.ref['name'], self.method.name)
         
         # return Call()
         args = self.method.args
@@ -389,7 +393,7 @@ class Invoke(Instruction):
         
         
         
-         # Some parts of invoke not yet implemented
+        # Some parts of invoke not yet implemented
         
 class Throw(Instruction):
     def __init__(self, opr, offset):

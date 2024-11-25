@@ -72,6 +72,7 @@ class Symbol(Enum):
     Add = auto()
     Mul = auto()
     TrueDiv = auto()
+    rDiv = auto()
     FloorDiv = auto()
     Mod = auto()
     Neg = auto()
@@ -82,43 +83,59 @@ class Tracker:
     symbol: Symbol
     value: int | float = 0
     
+    def __post_init__(self):
+        if self.base:
+            self.identity = self.base.identity
+        else:
+            self.identity = id(self)
+    
     def __add__(self, other):
-        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
-        return Tracker(self, Symbol.Add, other)
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.Add, other)
+        return NotImplemented
     
     def __mul__(self, other):
-        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
-        return Tracker(self, Symbol.Mul, other)
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.Mul, other)
+        return NotImplemented
     
     def __truediv__(self, other):
-        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
-        return Tracker(self, Symbol.TrueDiv, other)
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.TrueDiv, other)
+        return NotImplemented
     
     def __floordiv__(self, other):
-        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
-        return Tracker(self, Symbol.FloorDiv, other)
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.FloorDiv, other)
+        return NotImplemented
     
     def __mod__(self, other):
-        assert isinstance(other, (int, float)), "Multi tracking math is not possible"
-        return Tracker(self, Symbol.Mod, other)
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.Mod, other)
+        return NotImplemented
+    
+    def __rdiv__(self, other):
+        if isinstance(other, (int, float)):
+            return Tracker(self, Symbol.rDiv)
+        return NotImplemented
     
     def __neg__(self):
         return Tracker(self, Symbol.Neg)
     
     def reverse(self, value):
         # return self.symbol, self.base
+        # value = float(value)
+        
         return {
-            Symbol.Add : lambda: self.base.reverse(value - self.other),
-            Symbol.Mul : lambda: self.base.reverse(value / self.other),
-            Symbol.TrueDiv : lambda: self.base.reverse(value * self.other),
-            Symbol.FloorDiv : lambda: self.base.reverse(value * self.other),
+            Symbol.Add : lambda: self.base.reverse(value - self.value),
+            Symbol.Mul : lambda: self.base.reverse(value / self.value),
+            Symbol.rDiv : lambda: self.base.reverse(self.value / value),
+            Symbol.TrueDiv : lambda: self.base.reverse(value * self.value),
+            Symbol.FloorDiv : lambda: self.base.reverse(value * self.value),
             Symbol.Mod : lambda: None,
             Symbol.Neg : lambda: -value,
             None: lambda: value
         }[self.symbol]()
-        
-        
-        
     
 class SignedUnknown(IntegerAbstracion):
     positive: bool
@@ -686,7 +703,9 @@ class intRange(IntegerAbstracion):
         return hash(self.__key)
     
     def update(self, value, relation):
-        print(self.tracking.reverse(value))
+        # print(self.tracking.reverse(value))
+        
+        # print(f"intRange updated with {value} and {relation}")
         
         if relation == Comparison.NotEqual:
             raise ValueError(f"{type(self)} cannot be updated with {relation}")
@@ -742,21 +761,28 @@ class intRange(IntegerAbstracion):
         raise TypeError(f"Attemped unimplemented conversion from type {type(value)} to {intRange}")
         
     def __neg__(self):
-        return intRange(-self.ub, -self.lb, -self.tracking)
+        return intRange(-self.ub, -self.lb, self.tracking)
 
     ################################################
     ############## Binary Operationss ##############
     ################################################
     
     def __add__(self, other):
-        if isinstance(other, (int, bool)):
+        # print("add", self, other, type(self), type(other), isinstance(other, (int, float, bool)))
+        
+        if isinstance(other, (int, float, bool)):
+            # print(f"Traking add {self.tracking.reverse(self.lb)} -> {(self.tracking + other).reverse(self.lb + other)}")
+            
+            
             return intRange(self.lb + other, self.ub + other, self.tracking + other)
         
         if isinstance(other, intRange):
+            print("ADDing ranges")
+            
             return intRange(
                 self.lb + other.lb, 
-                self.ub + other.ub)#,
-                # self.tracking + other.tracking)
+                self.ub + other.ub,
+                self.tracking)
         return NotImplemented
     
     def __radd__(self, other): return self + other
@@ -765,14 +791,19 @@ class intRange(IntegerAbstracion):
     
     def __mul__(self, other):
         if isinstance(other, (int, bool)):
+            # print(f"Traking {self.tracking.reverse(self.lb)} -> {(self.tracking * other)(self.lb * other)}")
+            
             return intRange(self.lb * other, self.ub * other, self.tracking * other)
         
         if isinstance(other, intRange):
+            
+            print("MULing ranges")
+            
             pBounds = self.lb * other.lb, self.lb * other.ub, self.ub * other.lb, self.ub * other.ub
             return intRange(
                 min(pBounds), 
-                max(pBounds))#,
-                # self.tracking * other.tracking)
+                max(pBounds),
+                self.tracking)
         return NotImplemented
     
     def __rmul__(self, other): return self * other
@@ -783,6 +814,8 @@ class intRange(IntegerAbstracion):
             return intRange(self.lb / other, self.ub / other, self.tracking / other)
         
         if isinstance(other, intRange):
+            
+            print("DIVing ranges")
             
             pBounds = []
             
@@ -795,7 +828,8 @@ class intRange(IntegerAbstracion):
             
             return intRange(
                 min(pBounds), 
-                max(pBounds))
+                max(pBounds),
+                self.tracking)
         return NotImplemented
 
 
@@ -808,6 +842,9 @@ class intRange(IntegerAbstracion):
             )
         if isinstance(other, intRange):
             
+            
+            print("FLOORDIVing ranges")
+            
             pBounds = []
             
             for x in (other.lb, -1, 1, other.ub):
@@ -817,7 +854,7 @@ class intRange(IntegerAbstracion):
             if len(pBounds) == 0:
                 raise Exception(f"No valid divison between {self} and {other}")
 
-            return intRange(min(pBounds), max(pBounds))
+            return intRange(min(pBounds), max(pBounds), self.tracking)
         return NotImplemented
 
     def __rfloordiv__(self, other):
@@ -834,9 +871,12 @@ class intRange(IntegerAbstracion):
             if len(pBounds) == 0:
                 raise Exception(f"No valid divison between {self} and {other}")
             
-            return intRange(min(pBounds), max(pBounds))
+            return intRange(min(pBounds), max(pBounds), other / self.tracking)
         
         if isinstance(other, intRange):
+            
+            
+            print("RDIVing ranges")
             
             pBounds = []
             
@@ -849,7 +889,8 @@ class intRange(IntegerAbstracion):
             
             return intRange(
                 min(pBounds), 
-                max(pBounds))
+                max(pBounds), 
+                self.tracking)
         return NotImplemented
 
     def __mod__(self, other):

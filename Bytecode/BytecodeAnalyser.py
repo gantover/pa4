@@ -7,10 +7,32 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Call, Instruction, Push, instructionFactory
-from Datatypes import Unknown, Array, Keystone
+from Datatypes import IntegerAbstracion, Unknown, Array, Keystone
 from WideIntRange import constants
-from State import State, Result, Comparison
+from State import BinaryOperation, State, Result, Comparison
 from random import randint
+
+def trace(state):
+    trace = []
+    
+    while(state):
+        trace.append(state)
+        state = state.prev
+    
+    return trace
+
+def extractAbstractions(state : State):
+    abstractions = set()
+    
+    for key, value in state.memory:
+        if isinstance(value, IntegerAbstracion):
+            abstractions.add((value.tracking.identity, value))
+    
+    for value in state.stack:
+        if isinstance(value, IntegerAbstracion):
+            abstractions.add((value.tracking.identity, value))
+    
+    return abstractions
 
 class Results(dict):
     def __init__(self):
@@ -23,10 +45,14 @@ class JavaSimulator:
     explored: set
     
     def __init__(self, instructions, initial_state):
+        initial_state.prev = None
+        
         self.instructions = instructions
         self.frontier = [initial_state]
         self.explored = {initial_state}
         self.toVisit = {pc for pc in range(len(instructions))}
+        
+        self.important_abstractions = extractAbstractions(initial_state)
     
     def update(self, initial_state):
         self.frontier = [initial_state]
@@ -81,18 +107,43 @@ class JavaSimulator:
                 # else:
                     # there could be multiple branch states
                     # for instance if statement returns two states 
-                    
+                
+                
                     
                 for r in result:
+                    if not isinstance(r, State):
+                        # print(trace(state))
+                        # print(extractAbstractions(state))
+                        traces = [(i, a.tracking.reverse(a.lb), a.tracking.reverse(a.ub)) for i, a in extractAbstractions(state)]
+                        
+                        # print(instruction.name)
+                        
+                        if instruction.name == "binary" and instruction.operant == BinaryOperation.Division:
+                            # print("Binary")
+                            
+                            i = state.stack[0].tracking.identity
+                            
+                            # print(i, self.important_abstractions, state.memory[0][1].tracking.identity, state.memory[1][1].tracking.identity, traces)
+                            
+                            traces = [trace if trace[0] != i else (i, 0 ,0) for trace in traces]
+                        
+                        traces = {trace[0]: trace[1:3] for trace in traces}
+                        
+                        
+                        print(traces, " -> ", r)
+                    
                     if isinstance(r, Result):
                         results[r] += 1
                     elif isinstance(r, State):
                         if r in self.explored:
                             results[Result.RunsForever] += 1
                         else:
+                            r.prev = state
+                            
                             self.frontier.append(r)
                             self.explored.add(r)
                     elif isinstance(r, Call):
+                        # print(trace(state))
                         results[Result.Unknown] += 1
                         pass
                     else:
@@ -137,8 +188,6 @@ def Invokation():
     from BytecodeAnalyser import parseMethod
     match(self.access):
         case InvokeType.Static | InvokeType.Dynamic:
-            if memory["recursion_depth_limit"] == 0:
-                return Result.DepthExceeded
 
             
             # get the arguments list
@@ -148,7 +197,7 @@ def Invokation():
             # get the method form json
             m = self.method.get_bytecode()
 
-            parsed = parseMethod(m, memory["analysis_class"], args_memory, memory["recursion_depth_limit"] - 1)
+            parsed = parseMethod(m, args_memory)
             l.debug("running invoke function")
             results = parsed.run(depth=400, debug=True)
             
@@ -212,8 +261,8 @@ def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursi
     else:
         memory = injected_memory
 
-    memory["recursion_depth_limit"] = recursion_limit
-    memory["analysis_class"] = analysis_cls
+    # memory["recursion_depth_limit"] = recursion_limit
+    # memory["analysis_class"] = analysis_cls
 
     return JavaSimulator(instructions, State(pc, memory, *stack))
 

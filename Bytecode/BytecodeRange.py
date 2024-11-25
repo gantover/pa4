@@ -26,6 +26,7 @@ l.debug("--- STATIC ---")
 try:
     parsed = BytecodeAnalyser.parseMethod(m, intRange)
 except Exception as e:
+    print("parsing error:", e)
     l.error("parsing error:", e)
     
 try:
