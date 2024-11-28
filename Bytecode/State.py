@@ -1,5 +1,6 @@
 ﻿#!/usr/bin/env python3
 
+from dataclasses import dataclass
 from enum import Enum
 from copy import deepcopy
 import parsing
@@ -169,3 +170,12 @@ class MethodDefinition:
         if isinstance(val, dict) and val.get("kind") == "array":
             return parsing.print_type(f"{val["type"]}[]")
         return parsing.print_type(val)
+
+@dataclass
+class Call:
+    access: InvokeType
+    method: MethodDefinition
+    args: dict
+    return_pc: int
+    return_memory: dict
+    return_stack : tuple

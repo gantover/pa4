@@ -1,12 +1,10 @@
 ﻿#!/usr/bin/env python3
 
-from dataclasses import dataclass
 from pathlib import Path
 from Datatypes import Ref, Unknown, Array, IntegerAbstracion, intRange
-from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation
+from State import State, Comparison, Result, FieldDefinition, MethodDefinition, InvokeType, BinaryOperation, Call
 from Parsing import SubclassFactory
 from Debug import l
-from copy import deepcopy
 
 class Instruction:
     name: str
@@ -350,15 +348,7 @@ class New(Instruction):
         
     def execute(self, pc, memory, *stack):
         return [State(pc, memory, Ref(self.javaClass), *stack)]
-
-@dataclass
-class Call:
-    access: InvokeType
-    method: MethodDefinition
-    args: dict
-    return_pc: int
-    return_memory: dict
-    return_stack : tuple
+        
 
 class Invoke(Instruction):
     access: InvokeType
@@ -390,9 +380,6 @@ class Invoke(Instruction):
         args = {i: x for i, x in enumerate(stack[:args_length])}
         
         return Call(self.access, self.method, args, pc, memory, stack[args_length:])
-        
-        
-        
         # Some parts of invoke not yet implemented
         
 class Throw(Instruction):

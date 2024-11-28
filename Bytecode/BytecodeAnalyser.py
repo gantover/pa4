@@ -7,7 +7,7 @@ from enum import Enum
 from Debug import l
 
 from Instructions import Call, Instruction, Push, instructionFactory
-from Datatypes import IntegerAbstracion, Unknown, Array, Keystone
+from Datatypes import IntegerAbstracion, Array, intRange
 from WideIntRange import constants
 from State import BinaryOperation, State, Result, Comparison
 from random import randint
@@ -46,13 +46,15 @@ class JavaSimulator:
     instructions: list[Instruction]
     frontier: list[State]
     explored: set
+    analysis_cls: IntegerAbstracion
     
-    def __init__(self, instructions, initial_state):
+    def __init__(self, analysis_cls, instructions, initial_state):
         initial_state.prev = None
         
         self.instructions = instructions
         self.frontier = [initial_state]
         self.explored = {initial_state}
+        self.analysis_cls = analysis_cls
         self.toVisit = {pc for pc in range(len(instructions))}
         
         self.important_abstractions = extractAbstractions(initial_state)
@@ -61,7 +63,7 @@ class JavaSimulator:
         self.frontier = [initial_state]
         self.explored = {initial_state}
     
-    def run(self, depth=100, debug=True) -> Results | None:
+    def run(self, depth=100, recursion_limit=100, debug=True) -> Results | None:
         results = Results()
         
         for result in Result:
@@ -146,9 +148,8 @@ class JavaSimulator:
                             self.frontier.append(r)
                             self.explored.add(r)
                     elif isinstance(r, Call):
-                        # print(trace(state))
+                        print(invoke_call(r, self.analysis_cls, depth - i, recursion_limit - 1, debug))
                         results[Result.Unknown] += 1
-                        pass
                     else:
                         results[Result.Success] += 1
                         results.returnValues.append(r)
@@ -187,22 +188,23 @@ class JavaSimulator:
         printFunction(f'{Result.RunsForever.value   };{certainty if results[Result.RunsForever]     > 0 else 100 - certainty }%')
         printFunction(f'{Result.DepthExceeded.value };{certainty if results[Result.DepthExceeded]   > 0 else 100 - certainty }%')
 
-def Invokation():
+def invoke_call(call, analysis_cls, depth, recursion_limit, debug):
     from BytecodeAnalyser import parseMethod
-    match(self.access):
-        case InvokeType.Static | InvokeType.Dynamic:
+    from State import InvokeType
 
-            
+    if recursion_limit == 0:
+        return Result.DepthExceeded
+
+    match(call.access):
+        case InvokeType.Static | InvokeType.Dynamic:
             # get the arguments list
             
-            
-            
             # get the method form json
-            m = self.method.get_bytecode()
+            m = call.method.get_bytecode()
 
-            parsed = parseMethod(m, args_memory)
+            parsed = parseMethod(m, analysis_cls, call.args)
             l.debug("running invoke function")
-            results = parsed.run(depth=400, debug=True)
+            results = parsed.run(depth, recursion_limit, debug)
             
             # l.debug(f'Results: {results}')
             # we unwrap the results to have branches
@@ -214,11 +216,11 @@ def Invokation():
                     return_values.append(key)
             
             if results[Result.Success] != 0:
-                if self.method.returns is not None:
+                if call.method.returns is not None:
                     for returnValue in results.returnValues:
-                        return_values.append(State(pc, memory, returnValue, *stack))    
+                        return_values.append(State(call.return_pc, call.return_memory, returnValue, *call.return_stack))    
                 else:
-                    return_values.append(State(pc, memory, *stack))
+                    return_values.append(State(call.return_pc, call.return_memory, *call.return_stack))
                 
             # l.debug(f"!! Return values from invoke !!: {return_values}")
             return return_values
@@ -226,17 +228,12 @@ def Invokation():
             # TODO: Implement for classes
             pass
         case _:
-            l.error(f"unhandled invoke access type : {self.access}")
-
-    methodRef, *stack = stack
-
-    if isinstance(methodRef, Ref) and methodRef.refType == "java/lang/AssertionError": #TODO::TEMP
-        return [State(pc, memory, *stack)]
+            l.error(f"unhandled invoke access type : {call.access}")
 
     return Result.Unknown
 
 
-def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursion_limit = 100):
+def parseMethod(method, analysis_cls = intRange, injected_memory = None):
     instructions = []
     pc, memory, *stack = State(0, dict())
     
@@ -264,40 +261,37 @@ def parseMethod(method, analysis_cls = Keystone, injected_memory = None, recursi
     else:
         memory = injected_memory
 
-    # memory["recursion_depth_limit"] = recursion_limit
-    # memory["analysis_class"] = analysis_cls
-
-    return JavaSimulator(instructions, State(pc, memory, *stack))
+    return JavaSimulator(analysis_cls, instructions, State(pc, memory, *stack))
 
 
-def generate(param, memory: dict, index: int):
-    try:
-        match(param := param["type"]["base"]):
-            case "int":
-                var = randint(-10,10)
-                """TODO : implement a number generation algorithm
-                based on static values loaded in the binary
-                we therefore need to have the static
-                analysis run before the dynamic one"""
-            case "boolean":
-                var = bool(randint(0,1))
-            case _:
-                l.error(f"unhandled data type in parameter : {param}")
-                # TODO implement more types
-        memory[index] = var
-    except:
-        # we should then have an array
-        try:
-            match(sup_param := param["type"]["kind"]):
-                case "array":
-                    lenght = randint(1, 10)
-                    ref = Array(lenght, 0)
-                    memory[index] = ref
-                    memory[ref] = lenght
-                    param = param["type"]
-                    for i in range(lenght):
-                        generate(param, memory, ref[i])
-                case _:
-                    l.error(f"unhandled data type in parameter : {param}")
-        except:
-            l.error(f"unhandled method parameter type : {param}")
+# def generate(param, memory: dict, index: int):
+#     try:
+#         match(param := param["type"]["base"]):
+#             case "int":
+#                 var = randint(-10,10)
+#                 """TODO : implement a number generation algorithm
+#                 based on static values loaded in the binary
+#                 we therefore need to have the static
+#                 analysis run before the dynamic one"""
+#             case "boolean":
+#                 var = bool(randint(0,1))
+#             case _:
+#                 l.error(f"unhandled data type in parameter : {param}")
+#                 # TODO implement more types
+#         memory[index] = var
+#     except:
+#         # we should then have an array
+#         try:
+#             match(sup_param := param["type"]["kind"]):
+#                 case "array":
+#                     lenght = randint(1, 10)
+#                     ref = Array(lenght, 0)
+#                     memory[index] = ref
+#                     memory[ref] = lenght
+#                     param = param["type"]
+#                     for i in range(lenght):
+#                         generate(param, memory, ref[i])
+#                 case _:
+#                     l.error(f"unhandled data type in parameter : {param}")
+#         except:
+#             l.error(f"unhandled method parameter type : {param}")
