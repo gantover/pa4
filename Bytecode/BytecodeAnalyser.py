@@ -6,7 +6,7 @@ from typing import List as PyList
 from enum import Enum
 from Debug import l
 
-from Instructions import Call, Instruction, Push, instructionFactory
+from Instructions import Call, GoTo, If, IfZ, Instruction, Push, instructionFactory
 from Datatypes import IntegerAbstracion, Array, intRange
 from WideIntRange import constants
 from State import BinaryOperation, State, Result, Comparison
@@ -29,6 +29,15 @@ def extractAbstractions(state : State):
             abstractions.add((value.tracking.identity, value))
     
     for value in state.stack:
+        if isinstance(value, IntegerAbstracion):
+            abstractions.add((value.tracking.identity, value))
+    
+    return abstractions
+
+def extractCallAbstractions(call : Call):
+    abstractions = set()
+    
+    for key, value in call.args.items():
         if isinstance(value, IntegerAbstracion):
             abstractions.add((value.tracking.identity, value))
     
@@ -143,7 +152,13 @@ class JavaSimulator:
                         results[r] += 1
                     elif isinstance(r, State):
                         if r in self.explored:
-                            results[Result.RunsForever] += 1
+                            # print(r)
+                            # print(r.trace)
+                            
+                            if isinstance(instruction, (GoTo, If, IfZ)) and instruction.target > pc:
+                                pass
+                            else:
+                                results[Result.RunsForever] += 1
                         else:
                             r.prev = state
                             
@@ -160,7 +175,7 @@ class JavaSimulator:
                                 results[Result.DepthExceeded] += 1
                                 
                             
-                            for j, altered in extractAbstractions(state):
+                            for j, altered in extractCallAbstractions(r):
                                 base = traces[j]
                                 
                                 lb = altered.lb if altered.lb > base[0] else base[0]
@@ -169,8 +184,6 @@ class JavaSimulator:
                                 base_size = base[1] - base[0]
                                 internal_size = ub - lb
                                 
-                                # print(base_size, internal_size)
-                                
                                 if base_size > internal_size:
                                     predicted_depth = base_size / (base_size - internal_size)
                                     
@@ -178,13 +191,18 @@ class JavaSimulator:
                                     
                                     if predicted_depth > allowed_depth:
                                         results[Result.DepthExceeded] += 1
+                                        # results[Result.Success] += 1
                                     # else:
                                     #     print("Finite")
                                 else:
+                                    # print(")
                                     infinite = True
                                     results[Result.DepthExceeded] += 1
                             
-                            # print(r.method.name, traces, " -> ", r)
+                            
+                            # print(base_size, internal_size)
+                            
+                            # print(r.method.name, traces, " -> ", r, infinite)
                             
                             if not infinite:
                                 if r.method.returns is not None:
