@@ -88,7 +88,13 @@ class JavaSimulator:
                         results[r] += 1
                     elif isinstance(r, State):
                         if r in self.explored:
-                            results[Result.RunsForever] += 1
+                            # print(r)
+                            # print(r.trace)
+                            
+                            if isinstance(instruction, (GoTo, If, IfZ)) and instruction.target > pc:
+                                pass
+                            else:
+                                results[Result.RunsForever] += 1
                         else:
                             self.frontier.append(r)
                             self.explored.add(r)
