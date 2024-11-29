@@ -34,6 +34,24 @@ def extractAbstractions(state : State):
     
     return abstractions
 
+def calculate_trace(state, instruction):
+    traces = [(i, a.tracking.reverse(a.lb), a.tracking.reverse(a.ub)) for i, a in extractAbstractions(state)]
+                        
+    # print(instruction.name)
+    
+    if instruction.name == "binary" and instruction.operant == BinaryOperation.Division:
+        # print("Binary")
+        
+        i = state.stack[0].tracking.identity
+        
+        # print(i, self.important_abstractions, state.memory[0][1].tracking.identity, state.memory[1][1].tracking.identity, traces)
+        
+        traces = [trace if trace[0] != i else (i, 0 ,0) for trace in traces]
+    
+    traces = {trace[0]: trace[1:3] for trace in traces}
+    
+    return traces
+
 class Results(dict):
     def __init__(self):
         super(Results, self).__init__()
@@ -63,13 +81,13 @@ class JavaSimulator:
         self.frontier = [initial_state]
         self.explored = {initial_state}
     
-    def run(self, depth=100, recursion_limit=100, debug=True) -> Results | None:
+    def run(self, allowed_depth=100, recursion_limit=100, debug=True) -> Results | None:
         results = Results()
         
         for result in Result:
             results.setdefault(result, 0)
     
-        for i in range(depth):
+        for i in range(allowed_depth):
             # to explore branches
             if(len(self.frontier) > 0):
                 state = self.frontier.pop()
@@ -119,23 +137,7 @@ class JavaSimulator:
                     if not isinstance(r, State) and r is not Result.NoResult:
                         # print(trace(state))
                         # print(extractAbstractions(state))
-                        traces = [(i, a.tracking.reverse(a.lb), a.tracking.reverse(a.ub)) for i, a in extractAbstractions(state)]
-                        
-                        # print(instruction.name)
-                        
-                        if instruction.name == "binary" and instruction.operant == BinaryOperation.Division:
-                            # print("Binary")
-                            
-                            i = state.stack[0].tracking.identity
-                            
-                            # print(i, self.important_abstractions, state.memory[0][1].tracking.identity, state.memory[1][1].tracking.identity, traces)
-                            
-                            traces = [trace if trace[0] != i else (i, 0 ,0) for trace in traces]
-                        
-                        traces = {trace[0]: trace[1:3] for trace in traces}
-                        
-                        
-                        print(traces, " -> ", r)
+                        pass
                     
                     if isinstance(r, Result):
                         results[r] += 1
@@ -148,8 +150,52 @@ class JavaSimulator:
                             self.frontier.append(r)
                             self.explored.add(r)
                     elif isinstance(r, Call):
-                        print(invoke_call(r, self.analysis_cls, depth - i, recursion_limit - 1, debug))
-                        results[Result.Unknown] += 1
+                        if r.method.name == self.name:
+                            traces = calculate_trace(state, instruction)
+                            
+                            infinite = False
+                            
+                            if len(traces) == 0:
+                                infinite = True
+                                results[Result.DepthExceeded] += 1
+                                
+                            
+                            for j, altered in extractAbstractions(state):
+                                base = traces[j]
+                                
+                                lb = altered.lb if altered.lb > base[0] else base[0]
+                                ub = altered.ub if altered.ub < base[1] else base[1]
+                                
+                                base_size = base[1] - base[0]
+                                internal_size = ub - lb
+                                
+                                print(base_size, internal_size)
+                                
+                                if base_size > internal_size:
+                                    predicted_depth = base_size / (base_size - internal_size)
+                                    
+                                    print("Depth: ", predicted_depth)
+                                    
+                                    if predicted_depth > allowed_depth:
+                                        results[Result.DepthExceeded] += 1
+                                    else:
+                                        print("Finite")
+                                else:
+                                    infinite = True
+                                    results[Result.DepthExceeded] += 1
+                            
+                            print(r.method.name, traces, " -> ", r)
+                            
+                            if not infinite:
+                                if r.method.returns is not None:
+                                    result.append(State(r.return_pc, r.return_memory, intRange(), *r.return_stack))    
+                                else:
+                                    result.append(State(r.return_pc, r.return_memory, *r.return_stack))
+                                
+                        else:
+                            print(invoke_call(r, self.analysis_cls, allowed_depth - i, recursion_limit - 1, debug))
+                            
+                            result.extend(invoke_call(r, self.analysis_cls, allowed_depth - i, recursion_limit - 1, debug))
                     else:
                         results[Result.Success] += 1
                         results.returnValues.append(r)
@@ -163,7 +209,7 @@ class JavaSimulator:
             else:
                 break
         
-        if i + 1 == depth:
+        if i + 1 == allowed_depth:
             l.debug("reached max depth")
             results[Result.Unknown] += 1
             
@@ -261,7 +307,16 @@ def parseMethod(method, analysis_cls = intRange, injected_memory = None):
     else:
         memory = injected_memory
 
-    return JavaSimulator(analysis_cls, instructions, State(pc, memory, *stack))
+    simulator = JavaSimulator(analysis_cls, instructions, State(pc, memory, *stack))
+    
+    if hasattr(method, "name"):
+        simulator.name = method.name
+    else:
+        simulator.name = method["name"]
+    
+    # print(simulator.name)
+    
+    return simulator
 
 
 # def generate(param, memory: dict, index: int):

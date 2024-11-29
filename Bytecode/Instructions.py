@@ -97,8 +97,8 @@ class If(Instruction):
 
             if isinstance(abstraction, intRange) and condition.inverse == Comparison.NotEqual:
                 stay = lambda: [
-                    State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.GreaterThan).deepcopy if abstraction > other else Result.NoResult,
-                    State(self.target, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.LessThan).deepcopy if abstraction < other else Result.NoResult
+                    State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.GreaterThan).deepcopy if abstraction > other else Result.NoResult,
+                    State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, Comparison.LessThan).deepcopy if abstraction < other else Result.NoResult
                 ]
             else:
                 stay = lambda: [State(pc, memory, *stack).queuePostCopyFunction(abstraction.update, other, condition.inverse).deepcopy]
@@ -175,8 +175,8 @@ class IfZ(Instruction):
 
             if isinstance(val, intRange) and self.condition.inverse == Comparison.NotEqual:
                 stay = lambda: [
-                    State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.GreaterThan).deepcopy if val > 0 else Result.NoResult,
-                    State(self.target, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.LessThan).deepcopy if val < 0 else Result.NoResult
+                    State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.GreaterThan).deepcopy if val > 0 else Result.NoResult,
+                    State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, Comparison.LessThan).deepcopy if val < 0 else Result.NoResult
                 ]
             else:
                 stay = lambda: [State(pc, memory, *stack).queuePostCopyFunction(val.update, 0, self.condition.inverse).deepcopy]
