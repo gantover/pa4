@@ -169,22 +169,22 @@ class JavaSimulator:
                                 base_size = base[1] - base[0]
                                 internal_size = ub - lb
                                 
-                                print(base_size, internal_size)
+                                # print(base_size, internal_size)
                                 
                                 if base_size > internal_size:
                                     predicted_depth = base_size / (base_size - internal_size)
                                     
-                                    print("Depth: ", predicted_depth)
+                                    # print("Depth: ", predicted_depth)
                                     
                                     if predicted_depth > allowed_depth:
                                         results[Result.DepthExceeded] += 1
-                                    else:
-                                        print("Finite")
+                                    # else:
+                                    #     print("Finite")
                                 else:
                                     infinite = True
                                     results[Result.DepthExceeded] += 1
                             
-                            print(r.method.name, traces, " -> ", r)
+                            # print(r.method.name, traces, " -> ", r)
                             
                             if not infinite:
                                 if r.method.returns is not None:
@@ -193,7 +193,7 @@ class JavaSimulator:
                                     result.append(State(r.return_pc, r.return_memory, *r.return_stack))
                                 
                         else:
-                            print(invoke_call(r, self.analysis_cls, allowed_depth - i, recursion_limit - 1, debug))
+                            # print(invoke_call(r, self.analysis_cls, allowed_depth - i, recursion_limit - 1, debug))
                             
                             result.extend(invoke_call(r, self.analysis_cls, allowed_depth - i, recursion_limit - 1, debug))
                     else:
